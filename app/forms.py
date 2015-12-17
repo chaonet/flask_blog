@@ -12,7 +12,7 @@ from wtforms.validators import DataRequired, Required
 
 class LoginForm(Form):
 	username = StringField('What is your name ?', validators=[Required()]) # 验证器列表
-	email = 
+	# email = 
 	remember_me = BooleanField('remember_me', default=False)
 	# print remember_me
 	# <UnboundField(BooleanField, ('remember_me',), {'default': False})>
