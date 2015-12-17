@@ -1,17 +1,17 @@
 {% extends 'base.html' %}
+{% import "bootstrap/wtf.html" as wtf %}
+
+{% block title %}Blog{% endblock title %}
+
 {% block content %}
+
 <h1>Sign In</h1>
-<form action="" method="post">
+{{ wtf.quick_form(form) }}
+<!-- <form action="" method="post" name="login">
     {{ form.hidden_tag() }}
-    <!-- <div style="display:none;"><input id="csrf_token" name="csrf_token" type="hidden" value="1449897234##9c8104147cc18429e8fceec447a588207445ee6e"></div> -->
-	<p>
-		Please enter your OpenID:
-		{{form.openid(size=80)}}
-		{% for error in form.openid.errors %}
-		<span style='color: red;'>{{ error }}</span> <!-- This field is required. -->
-		{% endfor %}
-	</p>
-	<p>{{ form.remember_me }} Remember Me</p>
-	<p><input type='submit' value='Sing In'></p>
-</form>
+    <p>{{ form.name.label }}</p>
+    <p>{{ form.name() }}</p>
+    <p>{{ form.remember_me() }} Remember Me</p>
+    <p>{{ form.submit() }}</p>
+</form> -->
 {% endblock %}

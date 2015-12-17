@@ -16,6 +16,15 @@ SQLALCHEMY_DATABASE_URI = 'sqlite:///' + os.path.join(basedir, 'app.db') # 数�
 SQLALCHEMY_MIGRATE_REPO = os.path.join(basedir, 'db_repository') # 文件夹，保存`SQLAlchemy-migrate`数据文件，也就是迁移策略文件
 # print SQLALCHEMY_MIGRATE_REPO
 # /Users/chao/Desktop/projects/flask/flask_blog/db_repository
+SQLALCHEMY_COMMIT_ON_TEARDOWN = True  # 每次请求结束后, 自动提交数据库中的变动
+
+MAIL_SERVER = 'smtp.qq.com' 
+MAIL_PORT = 587
+MAIL_USE_TLS = True
+MAIL_USERNAME = os.environ.get('MAIL_USERNAME') 
+# print MAIL_USERNAME
+MAIL_PASSWORD = os.environ.get('MAIL_PASSWORD')
+# print MAIL_PASSWORD
 
 # Flask-WTF
 CSPR_ENABLED = True # 启用 CSPR (跨站请求伪造) 保护，在表单中使用

@@ -6,8 +6,7 @@ from config import SQLALCHEMY_MIGRATE_REPO
 from app import db
 import os.path
 
-db.create_all()
-# None
+db.create_all() # 创建表/数据库
 
 if not os.path.exists(SQLALCHEMY_MIGRATE_REPO):
     # 在基本目录下创建名为 'db_repository' 的存储库

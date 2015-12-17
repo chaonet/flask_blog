@@ -1,9 +1,10 @@
-{% extends 'base.html' %}
+{% extends "bootstrap/base.html" %}
+
 {% block content %}
-   	<h1>Hello, {{ user.nickname }}</h1>
+   	<h1>Hello, {{ user }}</h1>
    	{% for post in posts %}
-    <ul>
-    	<li>{{ post.author.nickname }} say: <b>{{ post.body }}</b></li>
-    </ul>
+    <p>
+    	{{ post.author.nickname }} say: <b>{{ post.body }}</b>
+    </p>
    	{% endfor %}
 {% endblock %}

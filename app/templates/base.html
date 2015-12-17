@@ -1,4 +1,6 @@
-<html>
+{% extends "bootstrap/base.html" %}
+
+<!-- <html>
    <head>
    	{% if title %}
    	<title>{{ title }} - microblog</title>
@@ -7,16 +9,9 @@
    	{% endif %}
    </head>
    <body>
-   	<div>Microblog: <a href='/index'>Home</a></div>
-   	{% with messages = get_flashed_messages() %}
-   	{% if messages %}
-   	<ul>
-    {% for message in messages %}
-        <li>{{ message }}</li>
-    {% endfor %}
-   	</ul>
-   	{% endif %}
-   	{% endwith %}
-   	{% block content %}{% endblock %}
+   	<div>Microblog:  -->
+   		<!-- <a href='/index'>Home</a></div> -->
+<!--    		<a href="{{ url_for('index') }}">Home</a>
+   	</div>
    </body>
-</html>
+</html> -->
