@@ -18,10 +18,12 @@ app.config.from_object('config') # 从对象 'config' 读取配置到`app.config
 db = SQLAlchemy(app) # 初始化数据库
 # print dir(db)
 
-lm = LoginManager()
+login_manager = LoginManager()
+login_manager.session_protection = 'strong'
+login_manager.login_view = 'login'
 # print lm
 # <flask_login.LoginManager object at 0x1036899d0>
-lm.init_app(app)
+login_manager.init_app(app)
 
 # 初始化 bootstrap
 bootstrap = Bootstrap(app)
