@@ -1,8 +1,8 @@
 # -*- coding:utf-8 -*-
 from werkzeug.security import generate_password_hash, check_password_hash
-
+from itsdangerous import TimedJSONWebSignatureSerializer as Serializer # 生成 具有过期时间的JSON Web签名(JSON Web Signatures,JWS)
 from flask.ext.login import UserMixin
-
+from flask import current_app # 程序上下文
 from app import login_manager
 
 from app import db
@@ -14,6 +14,7 @@ class User(UserMixin, db.Model):
     email = db.Column(db.String(120), index = True, unique = True)
     # posts = db.relationship('Post', backref='author', lazy='dynamic') # 在 Post 中插入 author 反向引用
     password_hash = db.Column(db.String(128))
+    confirmed = db.Column(db.Boolean, default=False) # 用户状态: 待确认/已确认
     role_id = db.Column(db.Integer, db.ForeignKey('roles.id')) # 外键，与 roles 的 id 列 建立联结，值为 roles.id 的值
 
     # Python 内置装饰器，将一个getter方法变成属性。
@@ -30,9 +31,27 @@ class User(UserMixin, db.Model):
     # 将用户登陆时输入的密码 进行散列值计算 并 与注册时填写的密码散列值 比较，检查是否相同
     def verify_password(self, password):
         return check_password_hash(self.password_hash, password)
+    
+    # 生成确认令牌
+    def generate_confirmation_token(self, expiration=3600): 
+        s = Serializer(current_app.config['SECRET_KEY'], expiration) # 接受 一个密钥 和 过期时间，1小时
+        return s.dumps({'confirm': self.id}) # 返回 为 {'confirm': self.id} 生成的令牌
+    
+    # 确认用户发来的令牌
+    def confirm(self, token):
+        s = Serializer(current_app.config['SECRET_KEY'])
+        try:
+            data = s.loads(token)  # 检验收到的令牌字符串的 原始数据、过期时间
+        except:
+            return False
+        if data.get('confirm') != self.id: # 是否是为该用户的ID 生成的令牌，即使知道如何生成令牌，如果ID不对，也无法通过
+            return False
+        self.confirmed = True
+        db.session.add(self)
+        return True
 
-    # def __repr__(self):
-    # 	return '<User %r>' % self.username
+    def __repr__(self):
+    	return '<User %r>' % self.username
 
     # def is_authenticated(self):
     # 	return True

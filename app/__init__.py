@@ -1,11 +1,11 @@
 # -*- coding:utf-8 -*-
 import os
-from flask import Flask # 导入类
+from flask import Flask, render_template
 from flask.ext.sqlalchemy import SQLAlchemy # 从 flask 扩展中导入 SQLAlchemy
 from flask.ext.migrate import Migrate, MigrateCommand # 数据库迁移
 from flask.ext.script import Manager
 
-from flask.ext.mail import Mail
+from flask.ext.mail import Mail, Message
 
 from flask.ext.login import LoginManager
 from flask.ext.bootstrap import Bootstrap # Twitter 的开源客户端框架， Bootstrap
@@ -30,6 +30,12 @@ bootstrap = Bootstrap(app)
 
 # email
 mail = Mail(app)
+
+def send_email(to, subject, template, **kwargs):
+    msg = Message(subject, sender=app.config['MAIL_USERNAME'], recipients=[to])
+    msg.body = render_template(template + '.txt', **kwargs)
+    msg.html = render_template(template + '.html', **kwargs)
+    mail.send(msg)
 
 # 数据库迁移
 migrate = Migrate(app, db)

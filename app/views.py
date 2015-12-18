@@ -5,7 +5,7 @@ from flask import render_template, flash, redirect,    session, url_for, request
 from flask.ext.login import login_user, logout_user, current_user, login_required
 from .models import User, Post
 
-from app import app,   db, login_manager
+from app import app,   db, login_manager, send_email
 from .forms import LoginForm, RegistrationForm
 
 # 首页
@@ -13,21 +13,13 @@ from .forms import LoginForm, RegistrationForm
 @app.route('/index')
 def index():
     # user = {'nickname': 'Miguel'}
+    print current_user.is_anonymous
     if session.get('name'):
         user=session.get('name')
     else:
         user='Guest'
-    posts = [
-        {
-            'author': {'nickname': 'John'},
-            'body': 'Beautiful day in Portland!'
-        },
-        {
-             'author': {'nickname': 'Susan'},
-             'body': 'The Avengers movie was so cool'
-        }
-    ]
-    return render_template('index.html', title='Home', user=user, posts = posts)
+
+    return render_template('index.html', title='Home', user=user)
     # return "Hello, World!"
 
 # print __name__,3 # app.views
@@ -50,6 +42,9 @@ def login():
             # 当用户未登陆时，访问未授权的 URL ，会跳转显示登录表单
             # 此时 Flask-Login 会将这个访问的 URL 保存在 查询字符串 的 next 参数中,这个参数可从 request.args 字典中读取。
             # 当用户认证成功后，自动跳转到之前未成功访问的 URL。
+            
+            # 非登录情况下，访问 logout 页面，会跳转到登录页面，url：
+            # http://127.0.0.1:5000/login?next=%2Flogout
 
             # 或者，直接跳转到 'index'
         flash('Invalid username or password.')
@@ -82,7 +77,57 @@ def register():
                     password=form.password.data
                     )
         db.session.add(user) # 添加到会话，请求结束后自动提交到数据库
-        flash('You can now login.')
+        db.session.commit()
+        # 即便通过配置,程序已经可以在请求末尾自动提交数据库变化,这里也要添加 db.session.commit() 调用。
+        # 因为，提交数据库之后才能赋予新用户 id 值,而确认令 牌需要用到 id,所以不能延后提交。
+        token = user.generate_confirmation_token()
+        send_email(user.email, 'Confirm Your Account', 'confirm', user=user, token=token)
+        flash('A confirmation email has been sent to you by email.')
         return redirect(url_for('login')) # 重定向到登陆页面, 让用户登陆。向 login url 发送 get 请求。
     return render_template('register.html', form=form)
+
+# 令牌确认页面
+@app.route('/confirm/<token>')
+@login_required # 已登录用户才能访问，所以对于未登录用户，会自动跳转到登录页面，登录后，通过 next 再自动跳转回来，完成状态修改
+def confirm(token):
+    if current_user.confirmed: # 检查状态是否是 已经确认
+        return redirect(url_for('index')) # 直接重定向到主页
+    if current_user.confirm(token): # 令牌确认，完全在 User 模型中完成，视图函数只需调用 confirm() 方法，完成对用户的状态属性 转换。
+        flash('You have confirmed your account. Thanks!')  # 完成账号确认，状态
+    else:
+        flash('The confirmation link is invalid or has expired.') # 连接无效 或 超时。需要重发确认邮件……
+    return redirect(url_for('index'))
+
+# 请求钩子
+@app.before_request
+def before_request():
+    if current_user.is_authenticated and not current_user.confirmed and  \
+    request.endpoint[0:7] != 'confirm' and request.endpoint[0:6] != 'logout' and request.endpoint[0:6] != 'index':
+    #对于已经登录、没有确认、请求的页面不是令牌页面的 请求
+        # return redirect(url_for('unconfirmed'))
+        # print request.endpoint[0:6] is 'logout'
+        return render_template('unconfirmed.html')
+        # 重定向到 未确认页面
+
+# # 未确认页面
+# @app.route('/unconfirmed')
+# def unconfirmed():
+#     if current_user.is_anonymous or current_user.confirmed: # 游客，或已经确认的用户，直接跳到主页
+#         return redirect(url_for('index'))
+#     return render_template('unconfirmed.html')
+
+# 重新产生、发送账号确认邮件，即 令牌
+@app.route('/confirm')
+@login_required # 确保能够获取用户信息，知道往哪儿发送邮件
+def confirmresend():
+    # print current_user
+    # # <User u'chao'>
+    token = current_user.generate_confirmation_token()
+    # print token
+    print current_user.email
+    # xuchaorfc@gmail.com
+    # print current_user
+    send_email(current_user.email, 'Confirm Your Account', 'confirm', user=current_user, token=token)
+    flash('A confirmation email has been sent to you by email.')
+    return redirect(url_for('index'))
 
