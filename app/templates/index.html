@@ -1,6 +1,12 @@
 {% extends "base.html" %}
 
 {% block content %}
+    <div>
+    {% for message in get_flashed_messages() %} 
+         <p>{{ message }}</p>
+    {% endfor %}
+    </div>
+    
     <h1>Hello, 
     {% if current_user.is_authenticated %}
 

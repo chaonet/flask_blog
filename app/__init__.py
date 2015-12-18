@@ -8,13 +8,13 @@ from flask.ext.script import Manager
 from flask.ext.mail import Mail
 
 from flask.ext.login import LoginManager
-from flask.ext.bootstrap import Bootstrap # Bootstrap 客户端框架
+from flask.ext.bootstrap import Bootstrap # Twitter 的开源客户端框架， Bootstrap
 
 from config import basedir
 
 app = Flask(__name__) # 创建实例，因为是作为包被导入，'__name__'是包名，作为 flask 寻找文件的目录
 # print __name__,2 # app
-app.config.from_object('config') # 从对象 'config' 读取配置到`app.config`
+app.config.from_object('config') # 从文件对象 'config' 读取配置到`app.config`
 db = SQLAlchemy(app) # 初始化数据库
 # print dir(db)
 
@@ -34,6 +34,7 @@ mail = Mail(app)
 # 数据库迁移
 migrate = Migrate(app, db)
 
+# 使用Flask-Script 定制命令行选项
 manager = Manager(app)
 manager.add_command('db', MigrateCommand) # MigrateCommand 类通过参数名 `db` 调用
 
