@@ -6,14 +6,14 @@ from flask.ext.login import login_user, logout_user, current_user, login_require
 from .models import User, Post
 
 from app import app,   db, login_manager, send_email
-from .forms import LoginForm, RegistrationForm
+from .forms import LoginForm, RegistrationForm, Renewpassword, Renewmail, Newpassword, Newpassword_con
 
 # 首页
 @app.route('/')
 @app.route('/index')
 def index():
     # user = {'nickname': 'Miguel'}
-    print current_user.is_anonymous
+    # print current_user.is_anonymous
     if session.get('name'):
         user=session.get('name')
     else:
@@ -124,10 +124,87 @@ def confirmresend():
     # # <User u'chao'>
     token = current_user.generate_confirmation_token()
     # print token
-    print current_user.email
+    # print current_user.email
     # xuchaorfc@gmail.com
     # print current_user
     send_email(current_user.email, 'Confirm Your Account', 'confirm', user=current_user, token=token)
     flash('A confirmation email has been sent to you by email.')
     return redirect(url_for('index'))
+
+# 重设密码
+@app.route('/renew_password', methods = ['GET', 'POST'])
+@login_required
+def renew_password():
+    form = Renewpassword()
+    head = 'Renew password'
+    if form.validate_on_submit():
+        if current_user.verify_password(form.old_password.data): # 验证旧密码是否正确
+            current_user.password = form.new_password.data # 将新密码保存到数据库
+            flash('Success to renew password')
+            return redirect(url_for('index'))
+        else:
+            flash('Wrong old password')
+            form.new_password.data = ''
+            form.new_password_con.data = ''
+    return render_template('renew.html', form=form, head=head)
+
+
+@app.route('/renew_email', methods = ['GET', 'POST'])
+@login_required
+def renew_email():
+    form = Renewmail()
+    head = 'Renew mail'
+    if form.validate_on_submit():
+        new_email = form.new_email.data
+        session['new_email'] = new_email
+        token = current_user.generate_confirmation_token(new_email=new_email)
+        send_email(new_email, 'Confirm Your new email', 'confirmmail', user=current_user, token=token)
+        flash('A confirmation email has been sent to you by email.')
+        return redirect(url_for('index'))
+    return render_template('renew.html', form=form, head=head)
+
+# 令牌确认页面
+@app.route('/confirmmail/<token>')
+@login_required # 已登录用户才能访问，所以对于未登录用户，会自动跳转到登录页面，登录后，通过 next 再自动跳转回来，完成状态修改
+def confirmmail(token):
+    new_email = session['new_email']
+    if current_user.confirmmail(token, new_email): # 令牌确认，完全在 User 模型中完成，视图函数只需调用 confirm() 方法，完成对用户的状态属性 转换。
+        flash('You have confirmed your new email. Thanks!')  # 完成账号确认，状态
+    else:
+        flash('The confirmation link is invalid or has expired.') # 连接无效 或 超时。需要重发确认邮件……
+    return redirect(url_for('index'))
+
+# 找回密码
+@app.route('/newpassword', methods = ['GET', 'POST'])
+def changepassword():
+    form = Newpassword()
+    head = 'Input your register email'
+    if form.validate_on_submit():
+        email = form.email.data
+        user = User.query.filter_by(email=email).first()
+        session['email'] = email
+        # TypeError: <User u'chao'> is not JSON serializable
+        if user is not None:
+            token = user.generate_confirmation_token()
+            send_email(email, 'Change Your password', 'changepassword', user=user, token=token)
+            flash('A confirmation email has been sent to you by email.')
+            return redirect(url_for('index'))
+        flash('The email no exist.')
+    return render_template('renew.html', form=form, head=head)
+
+# 令牌确认页面
+@app.route('/confirmpassword/<token>', methods = ['GET', 'POST'])
+def confirmpassword(token):
+    email = session['email']
+    user = User.query.filter_by(email=email).first()
+    form = Newpassword_con()
+    head = 'Input your new password'
+    if user.confirmpassword(token):
+        if form.validate_on_submit():
+            user.password = form.password.data
+            flash('Your password is changed.')
+            return redirect(url_for('index'))
+        return render_template('renew.html', form=form, head=head) # 渲染`renew`给用户，表单提交时，url 保持为当前页面
+    return render_template('index.html')
+
 

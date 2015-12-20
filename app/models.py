@@ -33,9 +33,12 @@ class User(UserMixin, db.Model):
         return check_password_hash(self.password_hash, password)
     
     # 生成确认令牌
-    def generate_confirmation_token(self, expiration=3600): 
+    def generate_confirmation_token(self, expiration=3600, new_email=None): 
         s = Serializer(current_app.config['SECRET_KEY'], expiration) # 接受 一个密钥 和 过期时间，1小时
-        return s.dumps({'confirm': self.id}) # 返回 为 {'confirm': self.id} 生成的令牌
+        print s
+        print self
+        print self.id
+        return s.dumps({'confirm': self.id, 'new_email': new_email}) # 返回 为 {'confirm': self.id} 生成的令牌
     
     # 确认用户发来的令牌
     def confirm(self, token):
@@ -48,6 +51,27 @@ class User(UserMixin, db.Model):
             return False
         self.confirmed = True
         db.session.add(self)
+        return True
+
+    def confirmmail(self, token, new_email):
+        s = Serializer(current_app.config['SECRET_KEY'])
+        try:
+            data = s.loads(token)  # 检验收到的令牌字符串的 原始数据、过期时间
+        except:
+            return False
+        if data.get('confirm') != self.id or data.get('new_email') != new_email: 
+            return False
+        self.email = new_email
+        return True
+
+    def confirmpassword(self, token):
+        s = Serializer(current_app.config['SECRET_KEY'])
+        try:
+            data = s.loads(token)  # 检验收到的令牌字符串的 原始数据、过期时间
+        except:
+            return False
+        if data.get('confirm') != self.id: # 是否是为该用户的ID 生成的令牌，即使知道如何生成令牌，如果ID不对，也无法通过
+            return False
         return True
 
     def __repr__(self):

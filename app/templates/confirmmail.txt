@@ -1,0 +1,7 @@
+Dear {{ user.username }},
+
+<h3>Renew mail</h3>
+
+To renew your mail, please click on the following link: {{ url_for('confirmmail', token=token, _external=True) }} 
+
+Note: replies to this email address are not monitored.
