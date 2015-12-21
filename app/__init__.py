@@ -44,4 +44,10 @@ migrate = Migrate(app, db)
 manager = Manager(app)
 manager.add_command('db', MigrateCommand) # MigrateCommand 类通过参数名 `db` 调用
 
+from .models import Permission
+# ？？
+@app.context_processor
+def inject_permissions():
+	return dict(Permission=Permission)
+
 from app import views, models

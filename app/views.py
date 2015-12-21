@@ -8,6 +8,10 @@ from .models import User, Post
 from app import app,   db, login_manager, send_email
 from .forms import LoginForm, RegistrationForm, Renewpassword, Renewmail, Newpassword, Newpassword_con
 
+# 角色验证
+from decorators import admin_required, permission_required
+from .models import Permission
+
 # 首页
 @app.route('/')
 @app.route('/index')
@@ -207,4 +211,16 @@ def confirmpassword(token):
         return render_template('renew.html', form=form, head=head) # 渲染`renew`给用户，表单提交时，url 保持为当前页面
     return render_template('index.html')
 
+
+@app.route('/admin')
+@login_required
+@admin_required # 管理员角色验证
+def for_admins_only():
+    return 'For administrators!'
+
+@app.route('/moderator')
+@login_required
+@permission_required(Permission.MODERATE_COMMENTS) # 其他用户角色认证
+def for_moderators_only():
+    return 'For comment moderators!'
 

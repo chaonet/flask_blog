@@ -1,11 +1,19 @@
 # -*- coding:utf-8 -*-
 from werkzeug.security import generate_password_hash, check_password_hash
 from itsdangerous import TimedJSONWebSignatureSerializer as Serializer # 生成 具有过期时间的JSON Web签名(JSON Web Signatures,JWS)
-from flask.ext.login import UserMixin
+from flask.ext.login import UserMixin, AnonymousUserMixin
 from flask import current_app # 程序上下文
 from app import login_manager
 
 from app import db
+
+# 定义几个操作，以及对应的值
+class Permission:
+         FOLLOW = 0x01
+         COMMENT = 0x02
+         WRITE_ARTICLES = 0x04
+         MODERATE_COMMENTS = 0x08
+         ADMINISTER = 0x80
 
 class User(UserMixin, db.Model):
     __tablename__='users' # 自定义表名，隐藏属性
@@ -16,6 +24,24 @@ class User(UserMixin, db.Model):
     password_hash = db.Column(db.String(128))
     confirmed = db.Column(db.Boolean, default=False) # 用户状态: 待确认/已确认
     role_id = db.Column(db.Integer, db.ForeignKey('roles.id')) # 外键，与 roles 的 id 列 建立联结，值为 roles.id 的值
+
+    def __init__(self, **kwargs):
+        super(User, self).__init__(**kwargs)
+        
+        # 赋予角色
+        if self.role is None: # 如果还没有角色
+            if self.email == current_app.config['MAIL_USERNAME']: # 如果 邮箱是 管理员邮箱
+                self.role = Role.query.filter_by(permissions=0xff).first() # 定义角色为 管理员(通过权限查找)。不能用 False，因为 Moderator 也是 False
+            if self.role is None: # 如果角色还是空，说明不是管理员
+                self.role = Role.query.filter_by(default=True).first() # 角色定义为用户，即 default 是  True。默认角色。
+
+    # 身份验证
+    def can(self, permissions):
+        return self.role is not None and (self.role.permissions & permissions) == permissions # 对实际权限和查询的权限，进行按位 与 操作，然后与查询的权限比较
+
+    # 单独判断是否管理员身份
+    def is_administrator(self): # 判断是否是管理员
+        return self.can(Permission.ADMINISTER)
 
     # Python 内置装饰器，将一个getter方法变成属性。
     # 同时 @property 本身又创建了另一个装饰器@password.setter，负责把一个setter方法变成赋值属性
@@ -103,7 +129,32 @@ class Role(db.Model):
     __tablename__ = 'roles'
     id = db.Column(db.Integer, primary_key=True)
     name = db.Column(db.String(64), unique=True)
+    default = db.Column(db.Boolean, default=False, index=True) # 只有管理员才会设置为 True, 其他角色默认 False
+    permissions = db.Column(db.Integer)  # 权限，允许的操作集合，通过叠加权限值得出
     users = db.relationship('User', backref='role')
+
+    # 定义角色
+    @staticmethod # python 内置的装饰器，定义静态方法，类似全局函数，不需要 self 参数，可由类或类的实例调用
+    def insert_roles():
+        roles = {
+                'User': (Permission.FOLLOW |
+                         Permission.COMMENT |
+                         Permission.WRITE_ARTICLES, True), # 按位 `或运算`
+                'Moderator': (Permission.FOLLOW |
+                              Permission.COMMENT |
+                              Permission.WRITE_ARTICLES |
+                              Permission.MODERATE_COMMENTS, False),
+                'Administrator':(0xff, False)
+        }
+        # {'Moderator': (15, False), 'Administrator': (255, False), 'User': (7, True)}
+        for r in roles:
+            role = Role.query.filter_by(name=r).first() # 通过角色名查找是否有该角色
+            if role is None:  # 如果没有
+                role = Role(name=r) # 创建这个角色
+            role.permissions = roles[r][0] # 按照 roles 字典，设置权限
+            role.default = roles[r][1] # 设置是否管理员
+            db.session.add(role) # 添加到会话
+        db.session.commit() # 提交所有会话
 
     def __repr__(self):
         return '<Role %r>' % self.name
@@ -116,3 +167,16 @@ class Post(db.Model):
 
 	def __repr__(self):
 		return '<Post %r>' % self.body
+
+# 为了保持一致，对游客也提供这两个身份验证方法，不需要先检查用户是否登录，可以自由调用 current_user.can() 和 current_user.is_administrator()
+class AnonymousUser(AnonymousUserMixin):
+
+    def can(self, permissions):
+        return False
+
+    def is_administrator(self):
+        return False
+
+# ??
+# 将 AnonymousUser 设为用户未登录时 current_user 的值
+login_manager.anonymous_user = AnonymousUser
