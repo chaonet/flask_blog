@@ -102,15 +102,17 @@ def confirm(token):
         flash('The confirmation link is invalid or has expired.') # 连接无效 或 超时。需要重发确认邮件……
     return redirect(url_for('index'))
 
-# 请求钩子
+# 请求钩子, 在请求被交给指定的视图处理前，进行处理
 @app.before_request
 def before_request():
-    if current_user.is_authenticated and not current_user.confirmed and  \
-    request.endpoint[0:7] != 'confirm' and request.endpoint[0:6] != 'logout' and request.endpoint[0:6] != 'index':
+    if current_user.is_authenticated:
+        current_user.ping()
+        if not current_user.confirmed and  \
+        request.endpoint[0:7] != 'confirm' and request.endpoint[0:6] != 'logout' and request.endpoint[0:6] != 'index':
     #对于已经登录、没有确认、请求的页面不是令牌页面的 请求
         # return redirect(url_for('unconfirmed'))
         # print request.endpoint[0:6] is 'logout'
-        return render_template('unconfirmed.html')
+            return render_template('unconfirmed.html')
         # 重定向到 未确认页面
 
 # # 未确认页面
@@ -211,16 +213,25 @@ def confirmpassword(token):
         return render_template('renew.html', form=form, head=head) # 渲染`renew`给用户，表单提交时，url 保持为当前页面
     return render_template('index.html')
 
-
+# 管理页面的权限认证
 @app.route('/admin')
 @login_required
 @admin_required # 管理员角色验证
 def for_admins_only():
     return 'For administrators!'
 
+# 页面的权限认证
 @app.route('/moderator')
 @login_required
 @permission_required(Permission.MODERATE_COMMENTS) # 其他用户角色认证
 def for_moderators_only():
     return 'For comment moderators!'
+
+# 个人主页路由
+@app.route('/user/<username>') # 从URL截取用户昵称
+def user(username): # 将截取到的昵称做完参数传递给函数 user
+    user = User.query.filter_by(username=username).first() # 用获取的昵称在 user 表中查找用户
+    if user is None: # 如果没有这个昵称的用户
+        abort(404)  # 返回错误页面，404，没有该页面
+    return render_template('user.html', user=user) # 如果有对应的用户，返回该用户的个人主页
 

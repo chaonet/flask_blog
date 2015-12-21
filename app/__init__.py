@@ -5,6 +5,8 @@ from flask.ext.sqlalchemy import SQLAlchemy # 从 flask 扩展中导入 SQLAlche
 from flask.ext.migrate import Migrate, MigrateCommand # 数据库迁移
 from flask.ext.script import Manager
 
+from flask.ext.moment import Moment
+
 from flask.ext.mail import Mail, Message
 
 from flask.ext.login import LoginManager
@@ -36,6 +38,9 @@ def send_email(to, subject, template, **kwargs):
     msg.body = render_template(template + '.txt', **kwargs)
     msg.html = render_template(template + '.html', **kwargs)
     mail.send(msg)
+
+# 本地化日期和时间
+moment = Moment(app)
 
 # 数据库迁移
 migrate = Migrate(app, db)

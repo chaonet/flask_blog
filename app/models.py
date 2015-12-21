@@ -4,7 +4,7 @@ from itsdangerous import TimedJSONWebSignatureSerializer as Serializer # 生成 
 from flask.ext.login import UserMixin, AnonymousUserMixin
 from flask import current_app # 程序上下文
 from app import login_manager
-
+from datetime import datetime
 from app import db
 
 # 定义几个操作，以及对应的值
@@ -23,6 +23,10 @@ class User(UserMixin, db.Model):
     # posts = db.relationship('Post', backref='author', lazy='dynamic') # 在 Post 中插入 author 反向引用
     password_hash = db.Column(db.String(128))
     confirmed = db.Column(db.Boolean, default=False) # 用户状态: 待确认/已确认
+    name = db.Column(db.String(64)) # 真实姓名
+    location = db.Column(db.String(64)) # 所在地
+    member_since = db.Column(db.DateTime(), default=datetime.utcnow) # 注册日期
+    last_seen = db.Column(db.DateTime, default=datetime.utcnow) # 最后访问日期
     role_id = db.Column(db.Integer, db.ForeignKey('roles.id')) # 外键，与 roles 的 id 列 建立联结，值为 roles.id 的值
 
     def __init__(self, **kwargs):
@@ -102,6 +106,11 @@ class User(UserMixin, db.Model):
 
     def __repr__(self):
     	return '<User %r>' % self.username
+
+    # 刷新用户的最后访问时间
+    def ping(self):
+        self.last_seen = datetime.utcnow() # 调用函数，生成现在的时间，赋值
+        db.session.add(self)
 
     # def is_authenticated(self):
     # 	return True
