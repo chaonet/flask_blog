@@ -25,6 +25,7 @@ class User(UserMixin, db.Model):
     confirmed = db.Column(db.Boolean, default=False) # 用户状态: 待确认/已确认
     name = db.Column(db.String(64)) # 真实姓名
     location = db.Column(db.String(64)) # 所在地
+    about_me = db.Column(db.Text()) # 自我介绍
     member_since = db.Column(db.DateTime(), default=datetime.utcnow) # 注册日期
     last_seen = db.Column(db.DateTime, default=datetime.utcnow) # 最后访问日期
     role_id = db.Column(db.Integer, db.ForeignKey('roles.id')) # 外键，与 roles 的 id 列 建立联结，值为 roles.id 的值

@@ -1,12 +1,12 @@
 # -*- coding:utf-8 -*-
-from flask import render_template, flash, redirect,    session, url_for, request, g
+from flask import render_template, flash, redirect, abort,    session, url_for, request, g
 # g: 存储登录的用户信息
 
 from flask.ext.login import login_user, logout_user, current_user, login_required
-from .models import User, Post
+from .models import User, Post, Role
 
 from app import app,   db, login_manager, send_email
-from .forms import LoginForm, RegistrationForm, Renewpassword, Renewmail, Newpassword, Newpassword_con
+from .forms import LoginForm, RegistrationForm, Renewpassword, Renewmail, Newpassword, Newpassword_con, EditProfileForm, EditProfileAdminForm
 
 # 角色验证
 from decorators import admin_required, permission_required
@@ -234,4 +234,51 @@ def user(username): # 将截取到的昵称做完参数传递给函数 user
     if user is None: # 如果没有这个昵称的用户
         abort(404)  # 返回错误页面，404，没有该页面
     return render_template('user.html', user=user) # 如果有对应的用户，返回该用户的个人主页
+
+# 个人主页编辑页面
+@app.route('/edit_profile', methods=['GET', 'POST'])
+@login_required
+def edit_profile():
+    form = EditProfileForm()
+    if form.validate_on_submit():
+        current_user.name = form.name.data
+        current_user.location = form.location.data
+        current_user.about_me = form.about_me.data
+        db.session.add(current_user)
+        flash('Your profile has been updated')
+        return redirect(url_for('user', username=current_user.username)) # 提交后，转到个人主页，显示编辑结果
+    # 如果是 GET，或 验证器不通过，显示目前的资料内容
+    form.name.data = current_user.name 
+    form.location.data = current_user.location
+    form.about_me.data = current_user.about_me
+    return render_template('edit_profile.html', form=form)
+
+
+@app.route('/edit_profile/<int:id>', methods=['GET', 'POST']) # 接受整型的参数，默认是字符串。user 表的 id 列
+@login_required
+@admin_required
+def edit_profile_admin(id):
+    user = User.query.get_or_404(id) # 通过 id 获取 对应的 User 条目，如果有，返回对象，没有，返回 404 错误
+    form = EditProfileAdminForm(user=user) # 需要传递 user , 用于验证 email 和 username
+    if form.validate_on_submit():
+        # user 不一定是当前用户
+        user.email = form.email.data
+        user.username = form.username.data
+        user.confirmed = form.confirmed.data
+        user.role = Role.query.get(form.role.data) # 通过提交来的 Role 表的主键 id ，从 Role 表 获取角色对象
+        user.name = form.name.data
+        user.location = form.location.data
+        user.about_me = form.about_me.data
+        db.session.add(current_user)
+        flash('Your profile has been updated')
+        return redirect(url_for('user', username=user.username)) # 提交后，转到个人主页，显示编辑结果
+    # 如果是 GET，或 验证器不通过，显示目前的资料内容
+    form.email.data = user.email
+    form.username.data = user.username
+    form.confirmed.data = user.confirmed
+    form.role.data = user.role_id # 值为 Role.id 列的值，外键
+    form.name.data = user.name
+    form.location.data = user.location
+    form.about_me.data = user.about_me
+    return render_template('edit_profile.html', form=form, user=user)
 

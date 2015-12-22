@@ -3,15 +3,28 @@
 {% block content %}
 
 <h1>{{ user.username }}</h1>
+
+    <div>
+    {% for message in get_flashed_messages() %} 
+         <p>{{ message }}</p>
+    {% endfor %}
+    </div>
 {% if user.name or user.location %}
 <p>
     {% if user.name %}{{ user.name }}{% endif %}
     {% if user.location %} From <a href='http://maps.google.com/?q={{ user.location }}'>{{ user.location }}</a>{% endif %}
+
 </p>
 {% endif %}
 
 {% if current_user.is_administrator() %}<p><a href='mailto:{{ user.email }}'>{{ user.email }}</a></p>{% endif %}
 {% if user.about_me %}<p>{{ user.about_me }}</p>{% endif %}
+
+{% if current_user.is_administrator() %}
+<a href='{{ url_for('edit_profile_admin', id=user.id) }}'>Edit Profile Admin</a></p>
+{% elif user == current_user %}
+<a class='btn btn-default' href='{{ url_for('edit_profile') }}'>Edit Profile</a>
+{% endif %}
 <p>
     Member since {{ moment(user.member_since).format('L') }}.
     Last seen {{ moment(user.last_seen).fromNow() }}.
