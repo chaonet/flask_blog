@@ -22,7 +22,6 @@ class User(UserMixin, db.Model):
     id = db.Column(db.Integer, primary_key = True) # 主键，值由 Flask-SQLAlchemy 控制
     username = db.Column(db.String(64), index = True, unique = True) # index 为这列创建索引,提升查询效率; unique 不允许出现重复的值
     email = db.Column(db.String(120), index = True, unique = True)
-    # posts = db.relationship('Post', backref='author', lazy='dynamic') # 在 Post 中插入 author 反向引用
     password_hash = db.Column(db.String(128))
     confirmed = db.Column(db.Boolean, default=False) # 用户状态: 待确认/已确认
     name = db.Column(db.String(64)) # 真实姓名
@@ -31,6 +30,9 @@ class User(UserMixin, db.Model):
     member_since = db.Column(db.DateTime(), default=datetime.utcnow) # 注册日期
     last_seen = db.Column(db.DateTime, default=datetime.utcnow) # 最后访问日期
     avatar_hash = db.Column(db.String(32)) # 保存 email 的 MD5 值，以免每次 生成获取图片的URL ，都计算一次，耗费 CPU 资源
+    # 可以从 POST 通过属性 author 引用 User 模型的属性和方法
+    # post 的列表
+    posts = db.relationship('Post', backref='author', lazy='dynamic') # 在 Post 中插入 author , 反向引用 ？？ 
     role_id = db.Column(db.Integer, db.ForeignKey('roles.id')) # 外键，与 roles 的 id 列 建立联结，值为 roles.id 的值
 
     def __init__(self, **kwargs):
@@ -115,7 +117,7 @@ class User(UserMixin, db.Model):
         return True
 
     def __repr__(self):
-    	return '<User %r>' % self.username
+        return '<User %r>' % self.username
 
     # 刷新用户的最后访问时间
     def ping(self):
@@ -133,19 +135,19 @@ class User(UserMixin, db.Model):
 
 
     # def is_authenticated(self):
-    # 	return True
+    #   return True
 
     # def is_active(self):
-    # 	return True
+    #   return True
 
     # def is_anonymous(self):
-    # 	return False
+    #   return False
 
     # def get_id(self):
-    # 	try:
-    # 		return unicode(self.id)
-    # 	except NameError:
-    # 		return str(self.id)
+    #   try:
+    #       return unicode(self.id)
+    #   except NameError:
+    #       return str(self.id)
     
     # 加载用户的回调函数
     # 获得 Unicode 形式的用户id，转换为整形并查找用户
@@ -189,13 +191,14 @@ class Role(db.Model):
         return '<Role %r>' % self.name
 
 class Post(db.Model):
-	id = db.Column(db.Integer, primary_key = True)
-	body = db.Column(db.String(140))
-	timestamp = db.Column(db.DateTime)
-	#user_id = db.Column(db.Integer, db.ForeignKey('user.id')) # 外键使用 ForeignKey，指向 User 表的 id
+    __tablename__ = 'posts'
+    id = db.Column(db.Integer, primary_key=True)
+    body = db.Column(db.Text) # 博客正文，不限长度
+    timestamp = db.Column(db.DateTime, index=True, default=datetime.utcnow) # 发布博文的时间
+    author_id = db.Column(db.Integer, db.ForeignKey('users.id')) # 外键使用 ForeignKey，指向 User 表的 id
 
-	def __repr__(self):
-		return '<Post %r>' % self.body
+    def __repr__(self):
+        return '<Post %r>' % self.body
 
 # 为了保持一致，对游客也提供这两个身份验证方法，不需要先检查用户是否登录，可以自由调用 current_user.can() 和 current_user.is_administrator()
 class AnonymousUser(AnonymousUserMixin):

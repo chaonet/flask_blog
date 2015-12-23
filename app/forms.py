@@ -115,4 +115,9 @@ class EditProfileAdminForm(Form):
         if field.data != self.user.username and User.query.filter_by(username=field.data).first():
             raise ValidationError('Username already in use.')
 
+# 首页的 邮件编写 表单
+class PostForm(Form):
+    body = TextAreaField("What's you want to say?", validators=[Required()]) # 多行文本输入框，非空。用于写博客
+    submit = SubmitField('Submit')
+
 

@@ -2,7 +2,9 @@
 
 {% block content %}
 
+{% if user.is_authenticated  %}
 <img class="img-rounded profile-thumbnail" src="{{ user.gravatar(size=256) }}">
+{% endif %}
 
 <h1>{{ user.username }}</h1>
 
@@ -18,6 +20,9 @@
 
 </p>
 {% endif %}
+
+<h3>Post by {{ user.username }}</h3>
+{%  include '_posts.html' %}
 
 {% if current_user.is_administrator() %}<p><a href='mailto:{{ user.email }}'>{{ user.email }}</a></p>{% endif %}
 {% if user.about_me %}<p>{{ user.about_me }}</p>{% endif %}

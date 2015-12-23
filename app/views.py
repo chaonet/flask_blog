@@ -6,24 +6,28 @@ from flask.ext.login import login_user, logout_user, current_user, login_require
 from .models import User, Post, Role
 
 from app import app,   db, login_manager, send_email
-from .forms import LoginForm, RegistrationForm, Renewpassword, Renewmail, Newpassword, Newpassword_con, EditProfileForm, EditProfileAdminForm
+from .forms import LoginForm, RegistrationForm, Renewpassword, Renewmail, Newpassword, Newpassword_con, EditProfileForm, EditProfileAdminForm, PostForm
 
 # 角色验证
 from decorators import admin_required, permission_required
 from .models import Permission
 
 # 首页
-@app.route('/')
-@app.route('/index')
+@app.route('/', methods=['GET', 'POST'])
+@app.route('/index', methods=['GET', 'POST'])
 def index():
-    # user = {'nickname': 'Miguel'}
-    # print current_user.is_anonymous
-    if session.get('name'):
-        user=session.get('name')
-    else:
-        user='Guest'
+    form = PostForm()
+    if current_user.can(Permission.WRITE_ARTICLES) and form.validate_on_submit(): # 如果有写的权限，而且提交的表单有效
+        # 新文章对象的 author 属性值为表达式 current_user._get_current_object()。
+        # current_user 由 Flask-Login 提供,和所有上下文变量一样,也是通过线程内的代理对象实现。 ？？
+        # 这个对象的表现类似用户对象,但实际上却是一个轻度包装,包含真正的用户对象。 ？？
+        # 数据库需要真正的用户对象,因此要调用 _get_current_object() 方法获取。
+        post = Post(body=form.body.data, author=current_user._get_current_object()) # 为提交的文章 新建一个 Post 对象，
+        db.session.add(post)
+        return redirect(url_for('index'))
+    posts = Post.query.order_by(Post.timestamp.desc()).all() # 文章列表按照时间戳进行降序排列。
 
-    return render_template('index.html', title='Home', user=user)
+    return render_template('index.html', form=form, posts=posts) # 渲染 博客编辑的表单 和 完整的博客文章列表
     # return "Hello, World!"
 
 # print __name__,3 # app.views
@@ -233,7 +237,9 @@ def user(username): # 将截取到的昵称做完参数传递给函数 user
     user = User.query.filter_by(username=username).first() # 用获取的昵称在 user 表中查找用户
     if user is None: # 如果没有这个昵称的用户
         abort(404)  # 返回错误页面，404，没有该页面
-    return render_template('user.html', user=user) # 如果有对应的用户，返回该用户的个人主页
+    posts = user.posts.order_by(Post.timestamp.desc()).all() # 用户发布的博客文章列表通过 User.posts 关系获取,User.posts 返回的是查询对象,因此 可在其上调用过滤器
+    print user.posts
+    return render_template('user.html', user=user, posts=posts) # 如果有对应的用户，返回该用户的个人主页
 
 # 个人主页编辑页面
 @app.route('/edit_profile', methods=['GET', 'POST'])
