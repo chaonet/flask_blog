@@ -238,7 +238,12 @@ def user(username): # 将截取到的昵称做完参数传递给函数 user
     if user is None: # 如果没有这个昵称的用户
         abort(404)  # 返回错误页面，404，没有该页面
     posts = user.posts.order_by(Post.timestamp.desc()).all() # 用户发布的博客文章列表通过 User.posts 关系获取,User.posts 返回的是查询对象,因此 可在其上调用过滤器
-    print user.posts
+    # print user.posts
+    '''
+SELECT posts.id AS posts_id, posts.body AS posts_body, posts.timestamp AS posts_timestamp, posts.author_id AS posts_author_id
+FROM posts
+WHERE :param_1 = posts.author_id
+    '''
     return render_template('user.html', user=user, posts=posts) # 如果有对应的用户，返回该用户的个人主页
 
 # 个人主页编辑页面

@@ -133,7 +133,46 @@ class User(UserMixin, db.Model):
         hash = hashlib.md5(self.email.lower().encode('utf-8')).hexdigest() # 将 email 转为全小写，用 utf-8 编码，生成 MD5
         return "{url}/{hash}?s={size}&d={default}&r={rating}".format(url=url, hash=hash, size=size, default=default, rating=rating) # 生成请求 URL
 
+    # 用 forgery_by 批量产生虚拟数据
+    @staticmethod
+    def generate_fake(count=100): # 传入变量，值 100
+        from sqlalchemy.exc import IntegrityError # 异常类 (exception class), 完整性异常类
+        from random import seed
+        import forgery_py # 用于伪造数据
 
+        seed() # 使用当前系统时间初始化随机数生成器的种子
+        """
+        forgery_py.forgery.address
+        forgery_py.forgery.basic  
+        forgery_py.forgery.currency
+        forgery_py.forgery.date
+        forgery_py.forgery.internet
+        forgery_py.forgery.lorem_ipsum
+        forgery_py.forgery.name
+        forgery_py.forgery.personal
+        """
+        for i in range(count):  # 进行 100 次 for 循环
+            u = User( email=forgery_py.internet.email_address(),
+                      username=forgery_py.internet.user_name(True),
+                      password=forgery_py.lorem_ipsum.word(),
+                      confirmed=True,
+                      name=forgery_py.name.full_name(),
+                      location=forgery_py.address.city(),
+                      about_me=forgery_py.lorem_ipsum.sentence(),
+                      member_since=forgery_py.date.date(True)
+                    ) # 创建用户
+            db.session.add(u)
+            try:
+                db.session.commit()
+            except IntegrityError:
+                db.session.rollback()
+
+            """
+            用户的电子邮件地址和用户名必须是唯一的,但 ForgeryPy 随机生成这些信息,因 此有重复的风险。
+            如果发生了这种不太可能出现的情况,提交数据库会话时会抛出 IntegrityError 异常。
+            这个异常的处理方式是,在继续操作之前回滚会话。
+            由于 在循环中生成重复内容时,不会把用户写入数据库,因此生成的虚拟用户总数可能会比预期少。
+            """
     # def is_authenticated(self):
     #   return True
 
@@ -196,6 +235,28 @@ class Post(db.Model):
     body = db.Column(db.Text) # 博客正文，不限长度
     timestamp = db.Column(db.DateTime, index=True, default=datetime.utcnow) # 发布博文的时间
     author_id = db.Column(db.Integer, db.ForeignKey('users.id')) # 外键使用 ForeignKey，指向 User 表的 id
+
+    # 用 forgery_by 批量产生虚拟数据
+    @staticmethod
+    def generate_fake(count=100):
+        from random import seed, randint
+        import forgery_py # 用于伪造数据
+
+        seed() # 使用当前系统时间初始化随机数生成器的种子
+        '''
+        随机生成文章时要为每篇文章随机指定一个用户。为此,我们使用 offset() 查询过滤器。
+        这个过滤器会跳过参数中指定的记录数量。
+        通过设定一个随机的偏移值,再调用 first() 方法,就能每次都获得一个随机用户。
+        '''
+        user_count = User.query.count() # 获取用户的数量
+        for i in range(count): # 循环次数为用户的数量, 产生与用户数量相同的虚拟博客
+            u = User.query.offset(randint(0, user_count - 1)).first() # 选择虚拟博客的作者，通过在 user 中产生随机的整数偏移获得
+            p = Post(body=forgery_py.lorem_ipsum.sentences(randint(1, 3)), # a <= n <= b
+                     timestamp=forgery_py.date.date(True), # 随机产生 datetime.date  对象
+                     author=u
+                )
+            db.session.add(p)
+            db.session.commit()
 
     def __repr__(self):
         return '<Post %r>' % self.body
