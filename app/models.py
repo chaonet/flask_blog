@@ -2,10 +2,12 @@
 from werkzeug.security import generate_password_hash, check_password_hash
 from itsdangerous import TimedJSONWebSignatureSerializer as Serializer # 生成 具有过期时间的JSON Web签名(JSON Web Signatures,JWS)
 from flask.ext.login import UserMixin, AnonymousUserMixin
-from flask import current_app # 程序上下文
+from flask import current_app, request # 程序上下文
 from app import login_manager
 from datetime import datetime
 from app import db
+
+import hashlib # 生成 MD5 值
 
 # 定义几个操作，以及对应的值
 class Permission:
@@ -28,6 +30,7 @@ class User(UserMixin, db.Model):
     about_me = db.Column(db.Text()) # 自我介绍
     member_since = db.Column(db.DateTime(), default=datetime.utcnow) # 注册日期
     last_seen = db.Column(db.DateTime, default=datetime.utcnow) # 最后访问日期
+    avatar_hash = db.Column(db.String(32)) # 保存 email 的 MD5 值，以免每次 生成获取图片的URL ，都计算一次，耗费 CPU 资源
     role_id = db.Column(db.Integer, db.ForeignKey('roles.id')) # 外键，与 roles 的 id 列 建立联结，值为 roles.id 的值
 
     def __init__(self, **kwargs):
@@ -66,9 +69,6 @@ class User(UserMixin, db.Model):
     # 生成确认令牌
     def generate_confirmation_token(self, expiration=3600, new_email=None): 
         s = Serializer(current_app.config['SECRET_KEY'], expiration) # 接受 一个密钥 和 过期时间，1小时
-        print s
-        print self
-        print self.id
         return s.dumps({'confirm': self.id, 'new_email': new_email}) # 返回 为 {'confirm': self.id} 生成的令牌
     
     # 确认用户发来的令牌
@@ -84,6 +84,7 @@ class User(UserMixin, db.Model):
         db.session.add(self)
         return True
 
+    # 确认email
     def confirmmail(self, token, new_email):
         s = Serializer(current_app.config['SECRET_KEY'])
         try:
@@ -95,6 +96,7 @@ class User(UserMixin, db.Model):
         self.email = new_email
         return True
 
+    # 确认 password
     def confirmpassword(self, token):
         s = Serializer(current_app.config['SECRET_KEY'])
         try:
@@ -112,6 +114,16 @@ class User(UserMixin, db.Model):
     def ping(self):
         self.last_seen = datetime.utcnow() # 调用函数，生成现在的时间，赋值
         db.session.add(self)
+
+    # 通过 email 获取 gravatar 上对应的 头像
+    def gravatar(self, size=100, default='identicon', rating='g'): # 设置默认值
+        if request.is_secure: # SSL
+            url = 'https://secure.gravatar.com/avatar'
+        else:  # 普通
+            url = 'http://www.gravatar.com/avatar'
+        hash = hashlib.md5(self.email.lower().encode('utf-8')).hexdigest() # 将 email 转为全小写，用 utf-8 编码，生成 MD5
+        return "{url}/{hash}?s={size}&d={default}&r={rating}".format(url=url, hash=hash, size=size, default=default, rating=rating) # 生成请求 URL
+
 
     # def is_authenticated(self):
     # 	return True

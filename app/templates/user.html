@@ -2,6 +2,8 @@
 
 {% block content %}
 
+<img class="img-rounded profile-thumbnail" src="{{ user.gravatar(size=256) }}">
+
 <h1>{{ user.username }}</h1>
 
     <div>
@@ -21,9 +23,9 @@
 {% if user.about_me %}<p>{{ user.about_me }}</p>{% endif %}
 
 {% if current_user.is_administrator() %}
-<a href='{{ url_for('edit_profile_admin', id=user.id) }}'>Edit Profile Admin</a></p>
+<button class='btn btn-default' href='{{ url_for('edit_profile_admin', id=user.id) }}'>Edit Profile Admin</button></p>
 {% elif user == current_user %}
-<a class='btn btn-default' href='{{ url_for('edit_profile') }}'>Edit Profile</a>
+<button class='btn btn-default' href='{{ url_for('edit_profile') }}'>Edit Profile</button>
 {% endif %}
 <p>
     Member since {{ moment(user.member_since).format('L') }}.
