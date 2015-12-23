@@ -43,6 +43,9 @@ class User(UserMixin, db.Model):
             if self.role is None: # 如果角色还是空，说明不是管理员
                 self.role = Role.query.filter_by(default=True).first() # 角色定义为用户，即 default 是  True。默认角色。
 
+        if self.email is not None and self.avatar_hash is None: # 如果有email，并且 没有保存 MD5 值
+            self.avatar_hash = hashlib.md5(self.email.lower().encode('utf-8')).hexdigest()
+
     # 身份验证
     def can(self, permissions):
         return self.role is not None and (self.role.permissions & permissions) == permissions # 对实际权限和查询的权限，进行按位 与 操作，然后与查询的权限比较
@@ -94,6 +97,10 @@ class User(UserMixin, db.Model):
         if data.get('confirm') != self.id or data.get('new_email') != new_email: 
             return False
         self.email = new_email
+
+        # 更换邮箱时，自动生成 MD5 并保存
+        self.avatar_hash = hashlib.md5(self.email.lower().encode('utf-8')).hexdigest()
+        db.session.add(self)
         return True
 
     # 确认 password
