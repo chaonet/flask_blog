@@ -280,14 +280,22 @@ def user(username): # 将截取到的昵称做完参数传递给函数 user
     user = User.query.filter_by(username=username).first() # 用获取的昵称在 user 表中查找用户
     if user is None: # 如果没有这个昵称的用户
         abort(404)  # 返回错误页面，404，没有该页面
-    posts = user.posts.order_by(Post.timestamp.desc()).all() # 用户发布的博客文章列表通过 User.posts 关系获取,User.posts 返回的是查询对象,因此 可在其上调用过滤器
+    page = request.args.get('page', 1, type=int)
+    pagination = user.posts.order_by(Post.timestamp.desc()).paginate(
+        page, per_page=current_app.config['FLASKY_POSTS_PER_PAGE'],
+        error_out=False)
+    posts = pagination.items
+
+    # posts = user.posts.order_by(Post.timestamp.desc()).all() # 用户发布的博客文章列表通过 User.posts 关系获取,User.posts 返回的是查询对象,因此 可在其上调用过滤器
+    
     # print user.posts
     '''
 SELECT posts.id AS posts_id, posts.body AS posts_body, posts.timestamp AS posts_timestamp, posts.author_id AS posts_author_id
 FROM posts
 WHERE :param_1 = posts.author_id
     '''
-    return render_template('user.html', user=user, posts=posts) # 如果有对应的用户，返回该用户的个人主页
+    return render_template('user.html', user=user, posts=posts, pagination=pagination)
+    # return render_template('user.html', user=user, posts=posts) # 如果有对应的用户，返回该用户的个人主页
 
 # 个人主页编辑页面
 @app.route('/edit_profile', methods=['GET', 'POST'])
@@ -307,7 +315,7 @@ def edit_profile():
     form.about_me.data = current_user.about_me
     return render_template('edit_profile.html', form=form)
 
-
+# 管理员的编辑页面
 @app.route('/edit_profile/<int:id>', methods=['GET', 'POST']) # 接受整型的参数，默认是字符串。user 表的 id 列
 @login_required
 @admin_required
@@ -335,4 +343,27 @@ def edit_profile_admin(id):
     form.location.data = user.location
     form.about_me.data = user.about_me
     return render_template('edit_profile.html', form=form, user=user)
+
+
+# 文章的固定连接
+@app.route('/post/<int:id>') # 使用 数据库为文章分配的唯一 id
+def post(id):
+    post = Post.query.get_or_404(id)
+    return render_template('post.html', posts=[post])
+
+# 文章编辑页面
+@app.route('/edit_post/<int:id>', methods=['GET', 'POST'])
+@login_required
+def edit_post(id):
+    post = Post.query.get_or_404(id)
+    if post.author != current_user and not current_user.can(Permission.ADMINISTER): # 如果不是文章作者，也不是管理员。post.author 获取 文章的用户对象。
+        abort(403)
+    form = PostForm()
+    if form.validate_on_submit():
+        post.body = form.body.data
+        db.session.add(post)
+        flash('The post has been updated.')
+        return redirect(url_for('post', id=post.id)) # 进入文章页面, 携带参数 id
+    form.body.data = post.body
+    return render_template('edit_post.html', form=form, post=post)
 

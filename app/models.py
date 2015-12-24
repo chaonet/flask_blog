@@ -36,7 +36,7 @@ class User(UserMixin, db.Model):
     avatar_hash = db.Column(db.String(32)) # 保存 email 的 MD5 值，以免每次 生成获取图片的URL ，都计算一次，耗费 CPU 资源
     # 可以从 POST 通过属性 author 引用 User 模型的属性和方法
     # post 的列表
-    posts = db.relationship('Post', backref='author', lazy='dynamic') # 在 Post 中插入 author , 反向引用 ？？ 
+    posts = db.relationship('Post', backref='author', lazy='dynamic') # 在 Post 中插入 author , 反向引用 ？？ 可以通过 post.author 获得 user 对象
     role_id = db.Column(db.Integer, db.ForeignKey('roles.id')) # 外键，与 roles 的 id 列 建立联结，值为 roles.id 的值
 
     def __init__(self, **kwargs):

@@ -36,7 +36,7 @@
 {% if current_user.is_administrator() %}
 <button class='btn btn-default' href='{{ url_for('edit_profile_admin', id=user.id) }}'>Edit Profile Admin</button></p>
 {% elif user == current_user %}
-<button class='btn btn-default' href='{{ url_for('edit_profile') }}'>Edit Profile</button>
+<button class='btn btn-default' href='{{ url_for('edit_profile', post=post) }}'>Edit Profile</button>
 {% endif %}
 <p>
     Member since {{ moment(user.member_since).format('L') }}.
