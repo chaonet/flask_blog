@@ -2,10 +2,14 @@
 from werkzeug.security import generate_password_hash, check_password_hash
 from itsdangerous import TimedJSONWebSignatureSerializer as Serializer # 生成 具有过期时间的JSON Web签名(JSON Web Signatures,JWS)
 from flask.ext.login import UserMixin, AnonymousUserMixin
+from flask.ext.pagedown.fields import PageDownField # 与 TextAreaField 接口一致
 from flask import current_app, request # 上下文
 from app import login_manager
 from datetime import datetime
 from app import db
+
+from markdown import markdown # markdown 到 html 转换
+import bleach # 清理
 
 import hashlib # 生成 MD5 值
 
@@ -234,6 +238,7 @@ class Post(db.Model):
     id = db.Column(db.Integer, primary_key=True)
     body = db.Column(db.Text) # 博客正文，不限长度
     timestamp = db.Column(db.DateTime, index=True, default=datetime.utcnow) # 发布博文的时间
+    body_html = db.Column(db.Text) # 存放转换后的 HTML 代码
     author_id = db.Column(db.Integer, db.ForeignKey('users.id')) # 外键使用 ForeignKey，指向 User 表的 id
 
     # 用 forgery_by 批量产生虚拟数据
@@ -258,8 +263,33 @@ class Post(db.Model):
             db.session.add(p)
             db.session.commit()
 
+
+    @staticmethod
+    def on_changed_body(target, value, oldvalue, initiator):
+        allowed_tags = ['a', 'abbr', 'acronym', 'b', 'blockquote', 'code', 
+                        'em', 'i', 'li', 'ol', 'pre', 'strong', 'ul',
+                        'h1', 'h2', 'h3', 'p']
+        target.body_html = bleach.linkify(bleach.clean(
+                                markdown(value, output_format='html'), 
+                                tags=allowed_tags, strip=True))
+    """
+    真正的转换过程分三步完成。
+    首先,markdown() 函数初步把 Markdown 文本转换成 HTML。 
+    然后,把得到的结果和允许使用的 HTML 标签列表传给 clean() 函数。clean() 函数删除 所有不在白名单中的标签。
+    最后,由 linkify() 函数完成,这个函数由 Bleach 提 供,把纯文本中的 URL 转换成适当的 <a> 链接。
+      最后一步是很有必要的,因为 Markdown 规范没有为自动生成链接提供官方支持。
+      PageDown 以扩展的形式实现了这个功能,因此 在服务器上要调用 linkify() 函数。
+    """
     def __repr__(self):
         return '<Post %r>' % self.body
+
+db.event.listen(Post.body, 'set', Post.on_changed_body) # 监听某个字段的某个事件，一旦触发，执行指定的函数
+"""
+on_changed_body 函数注册在 body 字段上,是 SQLAlchemy“set”事件的监听程序
+只要这个类实例的 body 字段设了新值,函数就会自动被调用。
+on_changed_body 函数 把 body 字段中的文本渲染成 HTML 格式,结果保存在 body_html 中,
+自动且高效地完成 Markdown 文本到 HTML 的转换。
+"""
 
 # 为了保持一致，对游客也提供这两个身份验证方法，不需要先检查用户是否登录，可以自由调用 current_user.can() 和 current_user.is_administrator()
 class AnonymousUser(AnonymousUserMixin):

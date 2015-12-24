@@ -1,5 +1,7 @@
 # -*- coding:utf-8 -*-
 from flask.ext.wtf import Form # 表单类，从第三方扩展的命名空间 导入
+from flask.ext.pagedown.fields import PageDownField # 与 TextAreaField 接口一致
+
 from wtforms import StringField, BooleanField, SubmitField, PasswordField, TextAreaField, SelectField # 字段类
 from wtforms.validators import DataRequired, Required, Length, Email  , Regexp, EqualTo # 验证器，直接从 wtforms.validators 导入
 from wtforms import ValidationError
@@ -117,7 +119,7 @@ class EditProfileAdminForm(Form):
 
 # 首页的 邮件编写 表单
 class PostForm(Form):
-    body = TextAreaField("What's you want to say?", validators=[Required()]) # 多行文本输入框，非空。用于写博客
+    body = PageDownField("What's you want to say?", validators=[Required()]) # 启用 markdown，非空。用于写博客
     submit = SubmitField('Submit')
 
 

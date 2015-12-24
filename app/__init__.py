@@ -12,6 +12,8 @@ from flask.ext.mail import Mail, Message
 from flask.ext.login import LoginManager
 from flask.ext.bootstrap import Bootstrap # Twitter 的开源客户端框架， Bootstrap
 
+from flask.ext.pagedown import PageDown # 客户端 Markdown 到 HTML 的转换程序
+
 from config import basedir
 
 app = Flask(__name__) # 创建实例，因为是作为包被导入，'__name__'是包名，作为 flask 寻找文件的目录
@@ -54,5 +56,7 @@ from .models import Permission
 @app.context_processor
 def inject_permissions():
 	return dict(Permission=Permission)
+
+pagedown = PageDown(app)
 
 from app import views, models

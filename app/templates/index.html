@@ -3,6 +3,11 @@
 {% import "bootstrap/wtf.html" as wtf %}
 {% import "_macros.html" as macros %}
 
+{% block scripts %}
+    {{ super() }}
+    {{ pagedown.include_pagedown() }}
+{% endblock %}
+
 {% block content %}
     <div>
     {% for message in get_flashed_messages() %} 
