@@ -1,5 +1,5 @@
 # -*- coding:utf-8 -*-
-from flask import render_template, flash, redirect, abort,    session, url_for, request, g
+from flask import render_template, flash, redirect, abort,    session, url_for, request, g, current_app
 # g: 存储登录的用户信息
 
 from flask.ext.login import login_user, logout_user, current_user, login_required
@@ -25,10 +25,53 @@ def index():
         post = Post(body=form.body.data, author=current_user._get_current_object()) # 为提交的文章 新建一个 Post 对象，
         db.session.add(post)
         return redirect(url_for('index'))
-    posts = Post.query.order_by(Post.timestamp.desc()).all() # 文章列表按照时间戳进行降序排列。
+    # 渲染的页数从请求的查询字符串(request.args)中获取,如果没有明确指定,则默认渲染第一页。
+    # 参数 type=int 保证参数无法转换成整数时,返回默认值。
+    page = request.args.get('page', 1, type=int)
+    # print page
+    # 1
 
-    return render_template('index.html', form=form, posts=posts) # 渲染 博客编辑的表单 和 完整的博客文章列表
+    # print request
+    # <Request 'http://127.0.0.1:5000/' [GET]>
+
+    # print request.args
+    # http://127.0.0.1:5000/?2 第二页
+
+    # 为了显示某页中的记录,要把 all() 换成 Flask-SQLAlchemy 提供的 paginate() 方法。
+    # paginate() 方法的第一个参数是 第几页,也是唯一必需的参数。
+    # 可选参数 per_page 用来指定 每页显示的记录数量;如果没有指定,则默认显示 20 个记录。
+    # 可选参数 error_ out,当其设为 True 时(默认值),如果请求的页数超出了范围,则会返回 404 错误;如果 设为 False,页数超出范围时会返回一个空列表。
+    
+    # 为了能够很便利地配置每页显示的记录 数量,参数 per_page 的值从程序的环境变量 FLASKY_POSTS_PER_PAGE 中读取。
+    pagination = Post.query.order_by(Post.timestamp.desc()).paginate(
+        page, per_page=current_app.config['FLASKY_POSTS_PER_PAGE'],
+        error_out=False)
+
+    # print pagination
+    # <flask_sqlalchemy.Pagination object at 0x1041dd790>
+
+    posts = pagination.items
+    
+    # print posts
+    # [<Post u'Nam nulla. Curabitur in libero ut massa volutpat convallis. Nullam sit amet turpis elementum ligula vehicula consequat.'>, <Post u'Duis bibendum, felis sed interdum venenatis, turpis enim blandit mi, in porttitor pede justo eu massa. Donec dapibus.'>]
+    
+    # posts = Post.query.order_by(Post.timestamp.desc()).all() # 文章列表按照时间戳进行降序排列。
+
+    return render_template('index.html', form=form, posts=posts, pagination=pagination) # 渲染 博客编辑的表单 和 完整的博客文章列表, 分页
     # return "Hello, World!"
+
+    """
+    ImmutableMultiDict([])
+    127.0.0.1 - - [23/Dec/2015 20:17:56] "GET / HTTP/1.1" 200 -
+    ImmutableMultiDict([('2', u'')])
+    127.0.0.1 - - [23/Dec/2015 20:18:39] "GET /?2 HTTP/1.1" 200 -
+    ImmutableMultiDict([('3', u'')])
+    127.0.0.1 - - [23/Dec/2015 20:26:57] "GET /?3 HTTP/1.1" 200 -
+    ImmutableMultiDict([('4', u'')])
+    127.0.0.1 - - [23/Dec/2015 20:26:54] "GET /?4 HTTP/1.1" 200 -
+    ImmutableMultiDict([('int', u''), ('3', u''), ('user', u'user')])
+    127.0.0.1 - - [23/Dec/2015 20:28:53] "GET /?3&int&user=user HTTP/1.1" 200 -
+    """
 
 # print __name__,3 # app.views
 

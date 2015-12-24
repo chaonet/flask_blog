@@ -2,7 +2,7 @@
 from werkzeug.security import generate_password_hash, check_password_hash
 from itsdangerous import TimedJSONWebSignatureSerializer as Serializer # 生成 具有过期时间的JSON Web签名(JSON Web Signatures,JWS)
 from flask.ext.login import UserMixin, AnonymousUserMixin
-from flask import current_app, request # 程序上下文
+from flask import current_app, request # 上下文
 from app import login_manager
 from datetime import datetime
 from app import db

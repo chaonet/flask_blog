@@ -28,6 +28,8 @@ MAIL_USERNAME = os.environ.get('MAIL_USERNAME')
 MAIL_PASSWORD = os.environ.get('MAIL_PASSWORD')
 # print MAIL_PASSWORD
 
+FLASKY_POSTS_PER_PAGE=10
+
 # Flask-WTF
 CSPR_ENABLED = True # 启用 CSPR (跨站请求伪造) 保护，在表单中使用，隐藏属性
 SECRET_KEY = 'this-is-safe-and-you-never-guess-it' # 建立一个加密的令牌，验证表单
