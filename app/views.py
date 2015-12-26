@@ -367,3 +367,66 @@ def edit_post(id):
     form.body.data = post.body
     return render_template('edit_post.html', form=form, post=post)
 
+# 进行关注
+@app.route('/follow/<username>')
+@login_required
+@permission_required(Permission.FOLLOW)
+def follow(username):
+    user = User.query.filter_by(username=username).first() # 查找该用户
+    if user is None:
+        flash('Invalid user.')
+        return redirect(url_for('index'))
+    if current_user.is_following(user): # 是否已经关注
+        flash('You are already following this user.')
+        return redirect(url_for('user', username=username))
+    current_user.follow(user) # 进行关注
+    flash('You are now following %s' % username)
+    return redirect(url_for('user', username=username))
+
+# 取消关注
+@app.route('/unfollow/<username>')
+@login_required
+@permission_required(Permission.FOLLOW)
+def unfollow(username):
+    user = User.query.filter_by(username=username).first()
+    if user is None:
+        flash('Invalid user.')
+        return redirect(url_for('index'))
+    if not current_user.is_following(user): # 如果并没有关注
+        flash('You are not following this user.')
+        return redirect(url_for('user', username=username))
+    current_user.unfollow(user) # 取消关注
+    flash('You are now unfollow %s' % username)
+    return redirect(url_for('user', username=username))
+
+# 粉丝
+@app.route('/followers/<username>')
+def followers(username):
+    user = User.query.filter_by(username=username).first()
+    if user is None:
+        flash('Invalid user.')
+        return redirect(url_for('index'))
+    page = request.args.get('page', 1, type=int) # 获取要查看的页码
+    pagination = user.followers.paginate(
+        page, per_page=current_app.config['FLASKY_FOLLOWERS_PER_PAGE'],
+        error_out=False) # 对列表分页，将所需页的对象赋值给 pagination
+    follows = [{'user': item.follower, 'timestamp': item.timestamp} for item in pagination.items] # 从分页对象中获取每个条目对象，并赋值到字典列表
+
+    return render_template('followers.html', user=user, endpoint='followers', pagination=pagination, follows=follows)
+
+# 该用户关注的人
+@app.route('/followed_by/<username>')
+def followed_by(username):
+    user = User.query.filter_by(username=username).first()
+    if user is None:
+        flash('Invalid user.')
+        return redirect(url_for('index'))
+    page = request.args.get('page', 1, type=int) # 获取要查看的页码
+    pagination = user.followed.paginate(
+        page, per_page=current_app.config['FLASKY_FOLLOWERS_PER_PAGE'],
+        error_out=False) # 对列表分页，将所需页的对象赋值给 pagination
+    follows = [{'user': item.followed, 'timestamp': item.timestamp} for item in pagination.items] # 从分页对象中获取每个条目对象，并赋值到字典列表
+
+    return render_template('followers.html', user=user, endpoint='followers', pagination=pagination, follows=follows)
+
+

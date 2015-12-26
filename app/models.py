@@ -21,6 +21,13 @@ class Permission:
          MODERATE_COMMENTS = 0x08
          ADMINISTER = 0x80
 
+# 关注者关联表
+class Follow(db.Model):
+    __tablename__='follows'
+    follower_id = db.Column(db.Integer, db.ForeignKey('users.id'), primary_key=True)
+    followed_id = db.Column(db.Integer, db.ForeignKey('users.id'), primary_key=True)
+    timestamp = db.Column(db.DateTime, default=datetime.utcnow) # 默认时间是当前时间
+
 class User(UserMixin, db.Model):
     __tablename__='users' # 自定义表名，隐藏属性
     id = db.Column(db.Integer, primary_key = True) # 主键，值由 Flask-SQLAlchemy 控制
@@ -34,10 +41,23 @@ class User(UserMixin, db.Model):
     member_since = db.Column(db.DateTime(), default=datetime.utcnow) # 注册日期
     last_seen = db.Column(db.DateTime, default=datetime.utcnow) # 最后访问日期
     avatar_hash = db.Column(db.String(32)) # 保存 email 的 MD5 值，以免每次 生成获取图片的URL ，都计算一次，耗费 CPU 资源
+    
     # 可以从 POST 通过属性 author 引用 User 模型的属性和方法
     # post 的列表
-    posts = db.relationship('Post', backref='author', lazy='dynamic') # 在 Post 中插入 author , 反向引用 ？？ 可以通过 post.author 获得 user 对象
+    posts = db.relationship('Post', backref='author', lazy='dynamic') # 在有关联的 Post 模型中插入 author 列, 进行反向引用 ？？ 可以通过 post.author 获得 user 对象
     role_id = db.Column(db.Integer, db.ForeignKey('roles.id')) # 外键，与 roles 的 id 列 建立联结，值为 roles.id 的值
+
+    followed = db.relationship('Follow', 
+                                foreign_keys=[Follow.follower_id], 
+                                backref=db.backref('follower', lazy='joined'),
+                                lazy='dynamic',
+                                cascade='all, delete-orphan') # 被关注
+
+    followers = db.relationship('Follow',
+                                foreign_keys=[Follow.followed_id],
+                                backref=db.backref('followed', lazy='joined'),
+                                lazy='dynamic',
+                                cascade='all, delete-orphan') # 粉丝
 
     def __init__(self, **kwargs):
         super(User, self).__init__(**kwargs)
@@ -177,6 +197,27 @@ class User(UserMixin, db.Model):
             这个异常的处理方式是,在继续操作之前回滚会话。
             由于 在循环中生成重复内容时,不会把用户写入数据库,因此生成的虚拟用户总数可能会比预期少。
             """
+
+    # 开始关注
+    def follow(self, user):
+        if not self.is_following(user):
+            f = Follow(follower=self, followed=user) # 在关联表创建一条，自己关注了该用户
+            db.session.add(f) # 提交
+
+    # 取消关注
+    def unfollow(self, user):
+        f = self.followed.filter_by(followed_id=user.id).first() # 如果已经关注
+        if f:
+            db.session.delete(f) # 取消关注。从数据库中删除相应条目
+
+    # 判断是否已经关注
+    def is_following(self, user):
+        return self.followed.filter_by(followed_id=user.id).first() is not None
+
+    # 是否是自己的粉丝
+    def is_followed_by(self, user):
+        return self.followers.filter_by(follower_id=user.id).first() is not None
+
     # def is_authenticated(self):
     #   return True
 

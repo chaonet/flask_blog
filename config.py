@@ -29,6 +29,7 @@ MAIL_PASSWORD = os.environ.get('MAIL_PASSWORD')
 # print MAIL_PASSWORD
 
 FLASKY_POSTS_PER_PAGE=10
+FLASKY_FOLLOWERS_PER_PAGE=1
 
 # Flask-WTF
 CSPR_ENABLED = True # 启用 CSPR (跨站请求伪造) 保护，在表单中使用，隐藏属性

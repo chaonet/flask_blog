@@ -1,0 +1,34 @@
+{% extends "base.html" %}
+
+{% import "_macros.html" as macros %}
+
+{% block content %}
+
+<ul class='follows'>
+{% if not follows %}
+    <p>No user</p>
+{% endif %}
+
+{% for follow in follows %}
+    <li class='follow'>
+        <div class='profile-thumbnail'>
+            <a href='{{ url_for('user', username=follow.user.username) }}'>
+                <img class='img-rounded profile-thumbnail' src='{{ follow.user.gravatar(size=40) }}'>
+            </a>
+        </div>
+
+        <div class='follow-username'>{{ follow.user.username }}
+        </div>
+
+        <div class='follow-date'>{{ moment(follow.timestamp).fromNow() }}
+        </div>
+
+    </li>
+{% endfor %}
+</ul>
+
+<div class='pagination'>
+    {{ macros.pagination_widget(pagination, endpoint, username=user.username) }}
+</div>
+
+{% endblock %}
