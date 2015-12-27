@@ -1,5 +1,5 @@
 # -*- coding:utf-8 -*-
-from flask import render_template, flash, redirect, abort,    session, url_for, request, g, current_app
+from flask import render_template, flash, redirect, abort,    session, url_for, request, g, current_app, make_response
 # g: 存储登录的用户信息
 
 from flask.ext.login import login_user, logout_user, current_user, login_required
@@ -37,15 +37,24 @@ def index():
     # print request.args
     # http://127.0.0.1:5000/?2 第二页
 
+    show_followed = False # 默认设置显示所有人的文章
+
+    if current_user.is_authenticated:
+        show_followed = bool(request.cookies.get('show_followed', '')) # 通过 cookie 中的 show_followed 判断用户意图
+    if show_followed: # 如果要求显示关注的人的文章
+        query = current_user.followed_posts
+    else: # 否则
+        query = Post.query # 使用顶级查询，显示所有用户的文章
+
     # 为了显示某页中的记录,要把 all() 换成 Flask-SQLAlchemy 提供的 paginate() 方法。
     # paginate() 方法的第一个参数是 第几页,也是唯一必需的参数。
     # 可选参数 per_page 用来指定 每页显示的记录数量;如果没有指定,则默认显示 20 个记录。
     # 可选参数 error_ out,当其设为 True 时(默认值),如果请求的页数超出了范围,则会返回 404 错误;如果 设为 False,页数超出范围时会返回一个空列表。
     
     # 为了能够很便利地配置每页显示的记录 数量,参数 per_page 的值从程序的环境变量 FLASKY_POSTS_PER_PAGE 中读取。
-    pagination = Post.query.order_by(Post.timestamp.desc()).paginate(
+    pagination = query.order_by(Post.timestamp.desc()).paginate(
         page, per_page=current_app.config['FLASKY_POSTS_PER_PAGE'],
-        error_out=False)
+        error_out=False)  # 用上面的 query 替代 Post.query
 
     # print pagination
     # <flask_sqlalchemy.Pagination object at 0x1041dd790>
@@ -57,7 +66,7 @@ def index():
     
     # posts = Post.query.order_by(Post.timestamp.desc()).all() # 文章列表按照时间戳进行降序排列。
 
-    return render_template('index.html', form=form, posts=posts, pagination=pagination) # 渲染 博客编辑的表单 和 完整的博客文章列表, 分页
+    return render_template('index.html', form=form, show_followed=show_followed, posts=posts, pagination=pagination)
     # return "Hello, World!"
 
     """
@@ -428,5 +437,21 @@ def followed_by(username):
     follows = [{'user': item.followed, 'timestamp': item.timestamp} for item in pagination.items] # 从分页对象中获取每个条目对象，并赋值到字典列表
 
     return render_template('followers.html', user=user, endpoint='followed_by', pagination=pagination, follows=follows)
+
+# 设置 cookie 为 查看所有用户文章
+@app.route('/all')
+@login_required
+def show_all():
+    resp = make_response(redirect(url_for('index'))) # 创建一个重定向到首页的响应
+    resp.set_cookie('show_followed', '', max_age=30*24*60*60) # 要求客户端设置 cookie ，键值对 'show_followed':'' , 过期时间，单位 s。默认浏览器关闭后过期
+    return resp # 返回响应
+
+# 设置 cookie 为 查看 关注的人的文章
+@app.route('/followed')
+@login_required
+def show_followed():
+    resp = make_response(redirect(url_for('index')))
+    resp.set_cookie('show_followed', '1', max_age=30*24*60*60)
+    return resp
 
 
