@@ -7,7 +7,7 @@
 <ul class='follows'>
 {% if not follows %}
     <p>No user</p>
-{% endif %}
+{% else %}
 
 {% for follow in follows %}
     <li class='follow'>
@@ -30,5 +30,7 @@
 <div class='pagination'>
     {{ macros.pagination_widget(pagination, endpoint, username=user.username) }}
 </div>
+
+{% endif %}
 
 {% endblock %}

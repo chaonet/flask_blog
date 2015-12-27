@@ -427,6 +427,6 @@ def followed_by(username):
         error_out=False) # 对列表分页，将所需页的对象赋值给 pagination
     follows = [{'user': item.followed, 'timestamp': item.timestamp} for item in pagination.items] # 从分页对象中获取每个条目对象，并赋值到字典列表
 
-    return render_template('followers.html', user=user, endpoint='followers', pagination=pagination, follows=follows)
+    return render_template('followers.html', user=user, endpoint='followed_by', pagination=pagination, follows=follows)
 
 
