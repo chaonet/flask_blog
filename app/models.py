@@ -28,6 +28,27 @@ class Follow(db.Model):
     followed_id = db.Column(db.Integer, db.ForeignKey('users.id'), primary_key=True)
     timestamp = db.Column(db.DateTime, default=datetime.utcnow) # 默认时间是当前时间
 
+# 评论
+class Comment(db.Model):
+    __tablename__='comments'
+    id = db.Column(db.Integer, primary_key = 'True')
+    body = db.Column(db.Text)
+    body_html = db.Column(db.Text) # markdown
+    timestamp = db.Column(db.DateTime, index = True, default = datetime.utcnow)
+    disabled = db.Column(db.Boolean) # 关闭不当的评论
+    author_id = db.Column(db.Integer, db.ForeignKey('users.id'))
+    post_id = db.Column(db.Integer, db.ForeignKey('posts.id'))
+
+    @staticmethod
+    def on_changed_body(target, value, oldvalue, initiator): # 将 markdown 转换为 HTML
+        allowed_tags = ['a', 'abbr', 'acronym', 'b', 'code', 
+                        'em', 'i', 'strong']
+        target.body_html = bleach.linkify(bleach.clean(
+                                markdown(value, output_format='html'), 
+                                tags=allowed_tags, strip=True))
+
+db.event.listen(Comment.body, 'set', Comment.on_changed_body) # 监听 Comment.body  的 set 事件，自动执行 Comment.on_changed_body
+
 class User(UserMixin, db.Model):
     __tablename__='users' # 自定义表名，隐藏属性
     id = db.Column(db.Integer, primary_key = True) # 主键，值由 Flask-SQLAlchemy 控制
@@ -58,6 +79,8 @@ class User(UserMixin, db.Model):
                                 backref=db.backref('followed', lazy='joined'),
                                 lazy='dynamic',
                                 cascade='all, delete-orphan') # 粉丝
+
+    comments = db.relationship('Comment', backref='author', lazy='dynamic')
 
     def __init__(self, **kwargs):
         super(User, self).__init__(**kwargs)
@@ -286,6 +309,8 @@ class Post(db.Model):
     timestamp = db.Column(db.DateTime, index=True, default=datetime.utcnow) # 发布博文的时间
     body_html = db.Column(db.Text) # 存放转换后的 HTML 代码
     author_id = db.Column(db.Integer, db.ForeignKey('users.id')) # 外键使用 ForeignKey，指向 User 表的 id
+
+    comments = db.relationship('Comment', backref='post', lazy='dynamic')
 
     # 用 forgery_by 批量产生虚拟数据
     @staticmethod

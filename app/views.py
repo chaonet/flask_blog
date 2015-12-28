@@ -3,10 +3,10 @@ from flask import render_template, flash, redirect, abort,    session, url_for, 
 # g: 存储登录的用户信息
 
 from flask.ext.login import login_user, logout_user, current_user, login_required
-from .models import User, Post, Role
+from .models import User, Post, Role, Comment
 
 from app import app,   db, login_manager, send_email
-from .forms import LoginForm, RegistrationForm, Renewpassword, Renewmail, Newpassword, Newpassword_con, EditProfileForm, EditProfileAdminForm, PostForm
+from .forms import LoginForm, RegistrationForm, Renewpassword, Renewmail, Newpassword, Newpassword_con, EditProfileForm, EditProfileAdminForm, PostForm, CommentForm
 
 # 角色验证
 from decorators import admin_required, permission_required
@@ -70,16 +70,15 @@ def index():
     # return "Hello, World!"
 
     """
-    ImmutableMultiDict([])
-    127.0.0.1 - - [23/Dec/2015 20:17:56] "GET / HTTP/1.1" 200 -
-    ImmutableMultiDict([('2', u'')])
-    127.0.0.1 - - [23/Dec/2015 20:18:39] "GET /?2 HTTP/1.1" 200 -
-    ImmutableMultiDict([('3', u'')])
-    127.0.0.1 - - [23/Dec/2015 20:26:57] "GET /?3 HTTP/1.1" 200 -
-    ImmutableMultiDict([('4', u'')])
-    127.0.0.1 - - [23/Dec/2015 20:26:54] "GET /?4 HTTP/1.1" 200 -
-    ImmutableMultiDict([('int', u''), ('3', u''), ('user', u'user')])
-    127.0.0.1 - - [23/Dec/2015 20:28:53] "GET /?3&int&user=user HTTP/1.1" 200 -
+    print request.args
+
+ImmutableMultiDict([])
+127.0.0.1 - - [28/Dec/2015 22:30:45] "GET / HTTP/1.1" 200 -
+ImmutableMultiDict([('page', u'2')])
+127.0.0.1 - - [28/Dec/2015 22:30:48] "GET /index?page=2 HTTP/1.1" 200 -
+ImmutableMultiDict([('page', u'3')])
+127.0.0.1 - - [28/Dec/2015 22:30:58] "GET /index?page=3 HTTP/1.1" 200 -
+
     """
 
 # print __name__,3 # app.views
@@ -355,10 +354,31 @@ def edit_profile_admin(id):
 
 
 # 文章的固定连接
-@app.route('/post/<int:id>') # 使用 数据库为文章分配的唯一 id
+@app.route('/post/<int:id>', methods=['GET', 'POST']) # 使用 数据库为文章分配的唯一 id
 def post(id):
     post = Post.query.get_or_404(id)
-    return render_template('post.html', posts=[post])
+
+    form = CommentForm()
+    if current_user.can(Permission.COMMENT) and form.validate_on_submit():
+        comment = Comment(body=form.body.data, author=current_user._get_current_object(),  post=post) # 通过 relationship 创建的属性，在关系两边进行添加
+        db.session.add(comment)
+        flash('Your comment has been published.')
+        return redirect(url_for('post', id=post.id, page=-1)) # -1，因为最新添加的在post.comments列表的最后，如果想要显示最新的消息，默认显示最后一页
+    page = request.args.get('page', 1, type=int)
+    # if page == -1:
+    #     page = post.comments.count() / current_app.config['FLASKY_COMMENTS_PER_PAGE'] + 1 # 直接显示有最新评论的那一页
+    pagination = post.comments.order_by(Comment.timestamp.desc()).paginate(
+        page, per_page=current_app.config['FLASKY_COMMENTS_PER_PAGE'],
+        error_out=False)  # 时间，从新到旧
+
+    # print pagination
+    # <flask_sqlalchemy.Pagination object at 0x1041dd790>
+
+    comments = pagination.items
+
+    return render_template('post.html', posts=[post], endpoint='post', form=form, comments=comments, pagination=pagination)
+ 
+    # return render_template('post.html', posts=[post])
 
 # 文章编辑页面
 @app.route('/edit_post/<int:id>', methods=['GET', 'POST'])
@@ -453,5 +473,52 @@ def show_followed():
     resp = make_response(redirect(url_for('index')))
     resp.set_cookie('show_followed', '1', max_age=30*24*60*60)
     return resp
+
+# 管理评论
+@app.route('/moderate')
+@login_required
+@permission_required(Permission.MODERATE_COMMENTS)
+def moderate():
+    page = request.args.get('page', 1, type=int)
+    pagination = Comment.query.order_by(Comment.timestamp.desc()).paginate(
+        page, per_page=current_app.config['FLASKY_COMMENTS_PER_PAGE'],
+        error_out=False)
+
+    comments = pagination.items
+
+    return render_template('moderate.html', endpoint='moderate', comments=comments, pagination=pagination, page=page)
+
+
+@app.route('/moderate/enable/<int:id>')
+@login_required
+@permission_required(Permission.MODERATE_COMMENTS)
+def moderate_enable(id):
+    comment = Comment.query.get_or_404(id)
+    comment.disabled = False
+    db.session.add(comment)
+    return redirect(url_for('moderate', page = request.args.get('page', 1, type=int)))
+
+@app.route('/moderate/disable/<int:id>')
+@login_required
+@permission_required(Permission.MODERATE_COMMENTS)
+def moderate_disable(id):
+    comment = Comment.query.get_or_404(id)
+    comment.disabled = True
+    db.session.add(comment)
+    print Comment.query.get_or_404(id).disabled
+    return redirect(url_for('moderate', page = request.args.get('page', 1, type=int)))
+
+@app.route('/delete_comment/<int:id>')
+@login_required
+def delete_comment(id):
+    comment = Comment.query.filter_by(id=id).first()
+    if comment is None:
+        flash('Invalid comment.')
+    elif current_user == comment.author:
+        db.session.delete(comment)
+        flash('This comment has been delete.')
+    else:
+        flash("You can not delete this comment.")
+    return redirect(url_for('post', id=comment.post.id))
 
 

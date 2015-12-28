@@ -122,4 +122,9 @@ class PostForm(Form):
     body = PageDownField("What's you want to say?", validators=[Required()]) # 启用 markdown，非空。用于写博客
     submit = SubmitField('Submit')
 
+# 评论表单
+class CommentForm(Form):
+    body = PageDownField("Enter your comment", validators=[Required()]) # 启用 markdown，非空。用于写博客
+    submit = SubmitField('Submit')
+
 
