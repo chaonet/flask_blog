@@ -35,13 +35,13 @@
             <div class='comment-footer'>
                 {% if moderate %}
                     {% if comment.disabled %}
-                        <a class="btn btn-default btn-xs" href='{{ url_for('moderate_enable', id=comment.id) }}'>Enable</a>
+                        <a class="btn btn-default btn-xs" href='{{ url_for('moderate_enable', id=comment.id, page=page) }}'>Enable</a>
                     {% else %}
-                        <a class="btn btn-danger btn-xs" href='{{ url_for('moderate_disable', id=comment.id) }}'>Disable</a>
+                        <a class="btn btn-danger btn-xs" href='{{ url_for('moderate_disable', id=comment.id, page=page) }}'>Disable</a>
                     {% endif %}
                 {% endif %}
 
-                {% if comment.author == current_user %}
+                {% if comment.author == current_user and moderate%}
                     <a class="btn btn-danger btn-xs" href='{{ url_for('delete_comment', id=comment.id) }}'>Delete</a>
                 {% endif %}
 
