@@ -5,7 +5,6 @@ from flask import render_template, flash, redirect, abort,    session, url_for, 
 from flask.ext.login import login_user, logout_user, current_user, login_required
 from .models import User, Post, Role, Comment
 
-from app import app,   db, login_manager, send_email
 from .forms import LoginForm, RegistrationForm, Renewpassword, Renewmail, Newpassword, Newpassword_con, EditProfileForm, EditProfileAdminForm, PostForm, CommentForm
 
 # 角色验证

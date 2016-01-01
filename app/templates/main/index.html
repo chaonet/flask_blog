@@ -38,14 +38,14 @@
 </div>
 
 <ul class="nav nav-tabs">
-  <li role="presentation" {% if not show_followed %}class="active"{% endif %}><a href="{{ url_for('show_all') }}">All</a></li>
-  <li role="presentation" {% if show_followed %}class="active"{% endif %}><a href="{{ url_for('show_followed') }}">Followers</a></li>
+  <li role="presentation" {% if not show_followed %}class="active"{% endif %}><a href="{{ url_for('main.show_all') }}">All</a></li>
+  <li role="presentation" {% if show_followed %}class="active"{% endif %}><a href="{{ url_for('main.show_followed') }}">Followers</a></li>
 </ul>
 
 <div>
 {% include '_posts.html' %}
 <div class='pagination'>
-    {{ macros.pagination_widget(pagination, 'index') }}
+    {{ macros.pagination_widget(pagination, '.index') }}
 </div>
 </div>
 

@@ -18,15 +18,15 @@
     
 {% if current_user.can(Permission.FOLLOW) and user != current_user %}
     {% if not current_user.is_following(user) %}
-    <a href='{{ url_for('follow', username=user.username) }}' class='btn btn-primary'>Follow</a>
+    <a href='{{ url_for('.follow', username=user.username) }}' class='btn btn-primary'>Follow</a>
     {% else %}
-    <a href='{{ url_for('unfollow', username=user.username) }}' class='btn btn-primary'>Unfollow</a>
+    <a href='{{ url_for('.unfollow', username=user.username) }}' class='btn btn-primary'>Unfollow</a>
     {% endif %}
 {% endif %}
 
-<a href='{{ url_for('followers', username=user.username) }}'>Followers:<span class='badge'>{{ user.followers.count() }}</span></a>
+<a href='{{ url_for('.followers', username=user.username) }}'>Followers:<span class='badge'>{{ user.followers.count() }}</span></a>
 
-<a href='{{ url_for('followed_by', username=user.username) }}'>Following:<span class='badge'>{{ user.followed.count() }}</span></a>
+<a href='{{ url_for('.followed_by', username=user.username) }}'>Following:<span class='badge'>{{ user.followed.count() }}</span></a>
 
 {% if current_user.is_authenticated and user != current_user and user.is_following(current_user) %}
     <span class='label label-default'>Follows you</span>
@@ -44,16 +44,16 @@
 {%  include '_posts.html' %}
 
 <div class='pagination'>
-    {{ macros.pagination_widget(pagination, 'index') }}
+    {{ macros.pagination_widget(pagination, 'main.index') }}
 </div>
 
 {% if current_user.is_administrator() %}<p><a href='mailto:{{ user.email }}'>{{ user.email }}</a></p>{% endif %}
 {% if user.about_me %}<p>{{ user.about_me }}</p>{% endif %}
 
 {% if current_user.is_administrator() %}
-<button class='btn btn-default' href='{{ url_for('edit_profile_admin', id=user.id) }}'>Edit Profile Admin</button></p>
+<button class='btn btn-default' href='{{ url_for('.edit_profile_admin', id=user.id) }}'>Edit Profile Admin</button></p>
 {% elif user == current_user %}
-<button class='btn btn-default' href='{{ url_for('edit_profile', post=post) }}'>Edit Profile</button>
+<button class='btn btn-default' href='{{ url_for('.edit_profile', post=post) }}'>Edit Profile</button>
 {% endif %}
 <p>
     Member since {{ moment(user.member_since).format('L') }}.

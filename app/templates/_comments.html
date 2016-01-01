@@ -3,7 +3,7 @@
 
     <li class='comment'>
         <div class='profile-thumbnail'>
-            <a href='{{ url_for('user', username=comment.author.username) }}'>
+            <a href='{{ url_for('main.user', username=comment.author.username) }}'>
                 <img class='img-rounded profile-thumbnail' src='{{ comment.author.gravatar(size=40) }}'>
             </a>
         </div>
@@ -12,7 +12,7 @@
         </div>
 
         <div class='comment-author'>
-            <a href='{{ url_for('user', username=comment.author.username) }}'>{{ comment.author.username }}</a>
+            <a href='{{ url_for('main.user', username=comment.author.username) }}'>{{ comment.author.username }}</a>
         </div>
     
         <div class'comment-body'>
@@ -35,14 +35,14 @@
             <div class='comment-footer'>
                 {% if moderate %}
                     {% if comment.disabled %}
-                        <a class="btn btn-default btn-xs" href='{{ url_for('moderate_enable', id=comment.id, page=page) }}'>Enable</a>
+                        <a class="btn btn-default btn-xs" href='{{ url_for('.moderate_enable', id=comment.id, page=page) }}'>Enable</a>
                     {% else %}
-                        <a class="btn btn-danger btn-xs" href='{{ url_for('moderate_disable', id=comment.id, page=page) }}'>Disable</a>
+                        <a class="btn btn-danger btn-xs" href='{{ url_for('.moderate_disable', id=comment.id, page=page) }}'>Disable</a>
                     {% endif %}
                 {% endif %}
 
                 {% if comment.author == current_user and moderate%}
-                    <a class="btn btn-danger btn-xs" href='{{ url_for('delete_comment', id=comment.id) }}'>Delete</a>
+                    <a class="btn btn-danger btn-xs" href='{{ url_for('.delete_comment', id=comment.id) }}'>Delete</a>
                 {% endif %}
 
             </div>

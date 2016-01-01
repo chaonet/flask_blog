@@ -2,7 +2,7 @@
 {% for post in posts %}
     <li class='post'>
         <div class='profile-thumbnail'>
-            <a href='{{ url_for('user', username=post.author.username) }}'>
+            <a href='{{ url_for('main.user', username=post.author.username) }}'>
                 <img class='img-rounded profile-thumbnail' src='{{ post.author.gravatar(size=40) }}'>
             </a>
         </div>
@@ -11,7 +11,7 @@
         </div>
 
         <div class='post-author'>
-            <a href='{{ url_for('user', username=post.author.username) }}'>{{ post.author.username }}</a>
+            <a href='{{ url_for('main.user', username=post.author.username) }}'>{{ post.author.username }}</a>
         </div>
 
         <div class'post-body'>
@@ -25,21 +25,21 @@
         <div class='post-content'>
 
             <div class='post-footer'>
-                <a href='{{ url_for('post', id=post.id) }}'>
+                <a href='{{ url_for('.post', id=post.id) }}'>
                     <span class='label label-default'>Permalik</span>
                 </a>
 
                 {% if current_user == post.author %}
-                    <a href='{{ url_for('edit_post', id=post.id) }}'>
+                    <a href='{{ url_for('.edit_post', id=post.id) }}'>
                         <spam class='label label-primary'>Edit Post</spam>
                     </a>
                 {% elif current_user.is_administrator() %}
-                    <a href='{{ url_for('edit_post', id=post.id) }}'>
+                    <a href='{{ url_for('.edit_post', id=post.id) }}'>
                         <spam class='label label-danger'>[Admin]</spam>
                     </a>
                 {% endif %}
 
-                <a href='{{ url_for('post', id=post.id) }}#comments'>
+                <a href='{{ url_for('.post', id=post.id) }}#comments'>
                     <span class='label label-primary'>
                         {{ post.comments.count() }} Comments
                     </span>

@@ -12,7 +12,7 @@
 {% for follow in follows %}
     <li class='follow'>
         <div class='profile-thumbnail'>
-            <a href='{{ url_for('user', username=follow.user.username) }}'>
+            <a href='{{ url_for('.user', username=follow.user.username) }}'>
                 <img class='img-rounded profile-thumbnail' src='{{ follow.user.gravatar(size=40) }}'>
             </a>
         </div>

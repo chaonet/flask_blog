@@ -1,62 +1,49 @@
 # -*- coding:utf-8 -*-
 import os
 from flask import Flask, render_template
+
+# 导入 Flask 扩展
 from flask.ext.sqlalchemy import SQLAlchemy # 从 flask 扩展中导入 SQLAlchemy
 from flask.ext.migrate import Migrate, MigrateCommand # 数据库迁移
 from flask.ext.script import Manager
-
 from flask.ext.moment import Moment
-
 from flask.ext.mail import Mail, Message
-
 from flask.ext.login import LoginManager
 from flask.ext.bootstrap import Bootstrap # Twitter 的开源客户端框架， Bootstrap
-
 from flask.ext.pagedown import PageDown # 客户端 Markdown 到 HTML 的转换程序
 
 from config import basedir
 
-app = Flask(__name__) # 创建实例，因为是作为包被导入，'__name__'是包名，作为 flask 寻找文件的目录
-# print __name__,2 # app
-app.config.from_object('config') # 从文件对象 'config' 读取配置到`app.config`
-db = SQLAlchemy(app) # 初始化数据库
-# print dir(db)
+bootstrap = Bootstrap()
+mail = Mail()
+moment = Moment()
+db = SQLAlchemy()
+pagedown = PageDown()
 
 login_manager = LoginManager()
 login_manager.session_protection = 'strong'
-login_manager.login_view = 'login'
+login_manager.login_view = 'auth.login'
 # print lm
 # <flask_login.LoginManager object at 0x1036899d0>
-login_manager.init_app(app)
 
-# 初始化 bootstrap
-bootstrap = Bootstrap(app)
+def create_app(config_name):
+	app = Flask(__name__) # 创建实例，因为是作为包被导入，'__name__'是包名，作为 flask 寻找文件的目录
+# print __name__,2 # app
+	app.config.from_object('config') # 从文件对象 'config' 读取配置到`app.config`
 
-# email
-mail = Mail(app)
+	bootstrap.init_app(app)
+	mail.init_app(app)
+	moment.init_app(app)
+	db.init_app(app)
+	login_manager.init_app(app)
+	pagedown.init_app(app)
 
-def send_email(to, subject, template, **kwargs):
-    msg = Message(subject, sender=app.config['MAIL_USERNAME'], recipients=[to])
-    msg.body = render_template(template + '.txt', **kwargs)
-    msg.html = render_template(template + '.html', **kwargs)
-    mail.send(msg)
+	from .main import main as main_blueprint # 注册蓝本
+	app.register_blueprint(main_blueprint)
 
-# 本地化日期和时间
-moment = Moment(app)
+	from .auth import auth as auth_blueprint # 注册 认证蓝本
+	app.register_blueprint(auth_blueprint, url_prefix='/auth')
 
-# 数据库迁移
-migrate = Migrate(app, db)
+	return app
 
-# 使用Flask-Script 定制命令行选项
-manager = Manager(app)
-manager.add_command('db', MigrateCommand) # MigrateCommand 类通过参数名 `db` 调用
-
-from .models import Permission
-# ？？
-@app.context_processor
-def inject_permissions():
-	return dict(Permission=Permission)
-
-pagedown = PageDown(app)
-
-from app import views, models
+# from app import views, models
