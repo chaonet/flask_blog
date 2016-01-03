@@ -3,7 +3,7 @@ from werkzeug.security import generate_password_hash, check_password_hash
 from itsdangerous import TimedJSONWebSignatureSerializer as Serializer # 生成 具有过期时间的JSON Web签名(JSON Web Signatures,JWS)
 from flask.ext.login import UserMixin, AnonymousUserMixin
 from flask.ext.pagedown.fields import PageDownField # 与 TextAreaField 接口一致
-from flask import current_app, request # 上下文
+from flask import current_app, request, url_for # 上下文
 from app import login_manager
 from datetime import datetime
 from app import db
@@ -12,6 +12,8 @@ from markdown import markdown # markdown 到 html 转换
 import bleach # 清理
 
 import hashlib # 生成 MD5 值
+
+from app.exceptions import ValidationError # 导入一个自定义的异常错误
 
 # 定义几个操作，以及对应的值
 class Permission:
@@ -46,6 +48,24 @@ class Comment(db.Model):
         target.body_html = bleach.linkify(bleach.clean(
                                 markdown(value, output_format='html'), 
                                 tags=allowed_tags, strip=True))
+
+    # 将评论信息转换成 JSON 格式的序列化字典
+    def to_json(self):
+        json_comment = {
+            'body': self.body,
+            'timestamp': self.timestamp,
+            'author': url_for('api.get_user', id=self.author.id, _external=True),
+            'post': url_for('api.get_post', id=self.post.id, _external=True),
+        }
+        return json_comment
+
+    # 用 JSON 的数据创建一条评论
+    @staticmethod
+    def from_json(json_post):
+        body = json_post.get('body') # 只从提交的 json_post 中获取 'body' 的值。其他字段 不用/不允许 客户端填写
+        if body is None or body == '': # 如果 没有'body' 这个字段，或者值为空
+            raise ValidationError('comment does not have a body') # 抛出异常，将错误提交给调用者，即上层代码处理
+        return Comment(body=body) # 返回一个 Post 对象
 
 db.event.listen(Comment.body, 'set', Comment.on_changed_body) # 监听 Comment.body  的 set 事件，自动执行 Comment.on_changed_body
 
@@ -273,6 +293,7 @@ class User(UserMixin, db.Model):
         s = Serializer(current_app.config['SECRET_KEY'], expiration)
         return s.dumps({'id': self.id})
 
+    # 用于 REST 的 API 认证令牌检验，因为此时并不知道是哪个用户，所以使用 静态方法
     @staticmethod
     def verify_auth_token(token):
         s = Serializer(current_app.config['SECRET_KEY'])
@@ -281,6 +302,19 @@ class User(UserMixin, db.Model):
         except:
             return None # 检验失败，返回 None
         return User.query.get(data['id']) # 检验成功，根据从令牌中提取出的 ID 获取用户对象
+
+    # 将用户信息转换成 JSON 格式的序列化字典
+    def to_json(self):
+        json_user = {
+            'url': url_for('api.get_post', id=self.id, _external=True),
+            'username': self.username,
+            'member_since': self.member_since,
+            'last_seen': self.last_seen,
+            'posts': url_for('api.get_user_posts', id=self.id, _external=True),
+            'followed_posts': url_for('api.get_user_followed_posts', id=self.id, _external=True),
+            'post_count': self.posts.count()
+        }
+        return json_user
 
 class Role(db.Model):
     __tablename__ = 'roles'
@@ -367,6 +401,27 @@ class Post(db.Model):
     """
     def __repr__(self):
         return '<Post %r>' % self.body
+
+    # 将文章转换为 JSON 格式的序列化字典
+    def to_json(self):
+        json_post = {
+            'url': url_for('api.get_post', id=self.id, _external=True),
+            'body': self.body,
+            'body_html': self.body_html,
+            'timestamp': self.timestamp,
+            'author': url_for('api.get_user', id=self.author_id, _external=True),
+            'comments': url_for('api.get_post_comments', id=self.id, _external=True),
+            'comment_count': self.comments.count(),
+        } # 包含的资源需要返回完整链接，调用的路由在 蓝本 中定义
+        return json_post
+
+    # 用 JSON 的数据创建一篇博客文章
+    @staticmethod
+    def from_json(json_post):
+        body = json_post.get('body') # 只从提交的 json_post 中获取 'body' 的值。其他字段 不用/不允许 客户端填写
+        if body is None or body == '': # 如果 没有'body' 这个字段，或者值为空
+            raise ValidationError('post does not have a body') # 抛出异常，将错误提交给调用者，即上层代码处理
+        return Post(body=body) # 返回一个 Post 对象
 
 db.event.listen(Post.body, 'set', Post.on_changed_body) # 监听某个字段的某个事件，一旦触发，执行指定的函数
 """

@@ -1,8 +1,9 @@
 # -*- coding:utf-8 -*-
 from flask import g, jsonify
-from .error import forbidden # forbidden_error
+from .errors import forbidden, unauthorized# forbidden_error
 
-from .api_1_0 import api
+from . import api
+from ..models import User, Post, AnonymousUser # 最低权限账号，游客
 
 from flask.ext.httpauth import HTTPBasicAuth # HTTP 基本认证
 auth = HTTPBasicAuth() # 创建一个 HTTPBasicAuth 类对象
@@ -47,12 +48,12 @@ def auth_error():
 @auth.login_required # 保护路由，只允许已登陆用户访问。否则，将用户重定向到 登陆页面
 def before_request():
 	if not g.current_user.is_anonymous and not g.current_user.confirmed: # 注册、登陆，但还没确认 的用户
-		return forbidden('Unconfirmed account') # 拒绝
+		return forbidden('Unconfirmed account1') # 拒绝
 
 # 将生成的 认证令牌 发送给客户端
 @api.route('/token')
 def get_token():
-	if g.current_user.is_anonymous() or g.token_used: # 如果是游客，或 已经有令牌了
+	if g.current_user.is_anonymous or g.token_used: # 如果是游客，或 已经有令牌了
 		return unauthorized('Invalid credentials') # 拒绝
 	return jsonify({'token': g.current_user.generate_auth_token(expiration=3600), 'expiration': 3600}) # JSON 的响应也有过期时间
 
