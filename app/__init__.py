@@ -12,7 +12,7 @@ from flask.ext.login import LoginManager
 from flask.ext.bootstrap import Bootstrap # Twitter 的开源客户端框架， Bootstrap
 from flask.ext.pagedown import PageDown # 客户端 Markdown 到 HTML 的转换程序
 
-from config import basedir
+from config import config
 
 bootstrap = Bootstrap()
 mail = Mail()
@@ -29,7 +29,7 @@ login_manager.login_view = 'auth.login'
 def create_app(config_name):
 	app = Flask(__name__) # 创建实例，因为是作为包被导入，'__name__'是包名，作为 flask 寻找文件的目录
 # print __name__,2 # app
-	app.config.from_object('config') # 从文件对象 'config' 读取配置到`app.config`
+	app.config.from_object(config[config_name]) # 从文件对象 'config' 读取配置到`app.config`
 
 	bootstrap.init_app(app)
 	mail.init_app(app)
