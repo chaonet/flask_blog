@@ -12,17 +12,58 @@ manager = Manager(app)  # 初始化 Flask-Script
 migrate = Migrate(app, db) # 初始化 Flask-Migrate
 
 def make_shell_context(): # 初始化 为 Python shell 定义的上下文
-	return dict(app=app, db=db, User=User, Role=Role)
+    return dict(app=app, db=db, User=User, Role=Role)
 manager.add_command('shell', Shell(make_context=make_shell_context))
 manager.add_command('db', MigrateCommand)
 
+COV = None
+if os.environ.get('FLASK_COVERAGE'): # 如果设置了覆盖检测
+    import coverage # 导入 coverage
+    COV = coverage.coverage(branch=True, include='app/*') # 启动覆盖检测引擎
+    # branch 的覆盖检测，除了通常的语句，还包括 检查每个条件语句的 True 和 False 分支是否执行了
+    # include 限制分析的文件范围，名称匹配模式的文件列表，匹配的文件将被测量覆盖率
+    COV.start()
+
 @manager.command
-def test(): # 向 run.py 脚本添加一个自定义命令。 函数名就是命令名
-	"""Run the unit tests."""
-	import unittest
-	test = unittest.TestLoader().discover('test') # 指定开始目录，在其子目录中递归查找所有测试模块，返回一个包含所有模块信息的 TestSuite  对象
-	unittest.TextTestRunner(verbosity=2).run(test) # 在代码中使用 TextTestRunner 运行测试。
-	# verbosity = 1，只有结果；verbosity = 2，输出详细的信息
+def test(coverage=False): # 向 run.py 脚本添加一个自定义命令。 函数名就是命令名
+# Flask-Script 根据参数名确定选项名,并据此向函数中传入 True 或 False。
+    """Run the unit tests."""
+    if coverage and not os.environ.get('FLASK_COVERAGE'):
+    # 如果命令行传递了coverage，而且 PATH 环境变量没有设置 FLASK_COVERAGE
+        import sys
+        os.environ['FLASK_COVERAGE'] = '1' # 设定环境变量 FLASK_COVERAGE
+        os.execvp(sys.executable, [sys.executable] + sys.argv)
+    """
+    函数执行一个新的程序，然后用新的程序替换当前子进程的进程空间，而该子进程从新程序的main函数开始执行。 重启子进程
+    在Unix下，该新程序的进程id是原来被替换的子进程的进程id。在原来子进程中打开的所有描述符默认都是可用的，不会被关闭。
+    """
+    # os.execvp(file, args) , 接受的参数是以一个list或者是一个tuple表示的参数表
+
+    # ➜  flask_blog git:(rest) ✗ python run.py shell
+    # >>> import sys
+    # >>> sys.executable
+    # '/Users/chao/Desktop/projects/flask/bin/python'
+    # 一个字符串，给出Python解释器的绝对路径
+    # >>> sys.argv
+    # ['run.py', 'shell']
+    # >>> [sys.executable] + sys.argv
+    # ['/Users/chao/Desktop/projects/flask/bin/python', 'run.py', 'shell']
+
+    import unittest
+    test = unittest.TestLoader().discover('test') # 指定开始目录，在其子目录中递归查找所有测试模块，返回一个包含所有模块信息的 TestSuite  对象
+    unittest.TextTestRunner(verbosity=2).run(test) # 在代码中使用 TextTestRunner 运行测试。
+    # verbosity = 1，只有结果；verbosity = 2，输出详细的信息
+    if COV:
+        COV.stop()
+        COV.save()
+        print 'Coverage Summary:'
+        COV.report()
+        basedir = os.path.abspath(os.path.dirname(__file__))
+        covdir = os.path.join(basedir, 'tmp/coverage') # 覆盖检测保存的目录
+        COV.html_report(directory=covdir) # 导出 HTML 格式的报告
+        print 'HTML version: file://%s/index.html' % covdir
+        COV.erase()
+
 '''
 ➜  flask_blog git:(rest) ✗ python run.py test
 test_app_exists (test_basics.BasicsTestCase) ... ok
@@ -41,4 +82,4 @@ OK
 '''
 
 if __name__ == '__main__':
-	manager.run()
+    manager.run()

@@ -17,7 +17,7 @@ class BasicsTestCase(unittest.TestCase): # 定义一个继承自unittest.TestCas
         self.app_context.pop() # 删除测试用实例的上下文
 
     def test_app_exists(self): # 定义测试用例，名字以test开头
-        self.assertFalse(current_app is None) # 调用 assertEqual 断言方法判断程序执行结果和预期值是否相符
+        self.assertFalse(current_app is None) # 调用 assertFalse 断言方法证实状态为 False
         
     def test_app_is_testing(self):
         self.assertTrue(current_app.config['TESTING'])
