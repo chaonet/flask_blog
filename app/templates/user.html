@@ -51,9 +51,9 @@
 {% if user.about_me %}<p>{{ user.about_me }}</p>{% endif %}
 
 {% if current_user.is_administrator() %}
-<button href='{{ url_for('main.edit_profile_admin', id=user.id) }}'>Edit Profile Admin</button></p>
+<a class='btn btn-danger' href='{{ url_for('main.edit_profile_admin', id=user.id) }}'>Edit Profile Admin</a>
 {% elif user == current_user %}
-<button  href='{{ url_for('main.edit_profile', post=post) }}'>Edit Profile</button>
+<a  href='{{ url_for('main.edit_profile', post=post) }}'>Edit Profile</a>
 {% endif %}
 <p>
     Member since {{ moment(user.member_since).format('L') }}.
