@@ -1,5 +1,5 @@
 # -*- coding:utf-8 -*-
-from flask import jsonify, request, current_app, url_for
+from flask import jsonify, request, current_app, url_for, g
 from . import api
 from .. import db
 
@@ -12,7 +12,6 @@ from .decorators import admin_required, permission_required
 from ..models import Permission
 
 @api.route('/users/<int:id>')
-@auth.login_required
 def get_user(id):
     user = User.query.get_or_404(id)
     return jsonify(user.to_json())
@@ -68,3 +67,9 @@ def get_user_followed(id):
             'next': next,
             'count': pagination.total
         })
+
+@api.before_request
+@auth.login_required # 保护路由，只允许已登陆用户访问。否则，将用户重定向到 登陆页面
+def before_request():
+    if not g.current_user.is_anonymous and not g.current_user.confirmed: # 注册、登陆，但还没确认 的用户
+        return forbidden('Unconfirmed account') # 拒绝

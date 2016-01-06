@@ -13,7 +13,6 @@ from ..models import Permission
 
 # GET 请求文章集合的资源
 @api.route('/posts/')
-@auth.login_required
 def get_posts():
     page = request.args.get('page', 1, type=int)
     pagination = Post.query.order_by(Post.timestamp.desc()).paginate(
@@ -40,7 +39,6 @@ def get_posts():
 
 # 返回单个博客文章
 @api.route('/posts/<int:id>')
-@auth.login_required
 def get_post(id):
     post = Post.query.get_or_404(id)
     return jsonify(post.to_json())
@@ -68,3 +66,9 @@ def edit_post(id):
     post.body = request.json.get('body', post.body) # 从提交的 JSON 获取 'body'的值，如果没有，默认为已有的 post.body
     db.session.add(post)
     return jsonify(post.to_json())
+
+@api.before_request
+@auth.login_required # 保护路由，只允许已登陆用户访问。否则，将用户重定向到 登陆页面
+def before_request():
+    if not g.current_user.is_anonymous and not g.current_user.confirmed: # 注册、登陆，但还没确认 的用户
+        return forbidden('Unconfirmed account') # 拒绝

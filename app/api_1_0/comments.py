@@ -12,7 +12,6 @@ from .decorators import admin_required, permission_required
 from ..models import Permission
 
 @api.route('/posts/<int:id>/comments/')
-@auth.login_required
 def get_post_comments(id):
     post = Post.query.get_or_404(id)
     page = request.args.get('page', 1, type=int)
@@ -47,7 +46,6 @@ def new_comment(id):
     return jsonify(comment.to_json()), 201, {'Location': url_for('api.get_one_comment', id=comment.id, _external=True)}
 
 @api.route('/comments/')
-@auth.login_required
 def get_comments():
     page = request.args.get('page', 1, type=int)
     pagination = Comment.query.order_by(Comment.timestamp.desc()).paginate(
@@ -70,8 +68,12 @@ def get_comments():
         })
 
 @api.route('/comments/<int:id>')
-@auth.login_required
 def get_one_comment(id):
     comment = Comment.query.get_or_404(id)
     return jsonify(comment.to_json())
 
+@api.before_request
+@auth.login_required # 保护路由，只允许已登陆用户访问。否则，将用户重定向到 登陆页面
+def before_request():
+    if not g.current_user.is_anonymous and not g.current_user.confirmed: # 注册、登陆，但还没确认 的用户
+        return forbidden('Unconfirmed account') # 拒绝

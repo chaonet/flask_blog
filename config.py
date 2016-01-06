@@ -20,9 +20,6 @@ class Config: # 通用的基类
 	FLASKY_FOLLOWERS_PER_PAGE=1
 	FLASKY_COMMENTS_PER_PAGE=10
 
-class DevelopmentConfig(Config): # 开发专用配置
-	DEBUG = True
-
 	# 作为email第三方客户端的参数配置，与 服务器 建立连接，并将邮件传给 服务器，由服务器发送出去
 	MAIL_SERVER = 'smtp.qq.com' 
 	MAIL_PORT = 587
@@ -31,6 +28,9 @@ class DevelopmentConfig(Config): # 开发专用配置
 	# print MAIL_USERNAME
 	MAIL_PASSWORD = os.environ.get('MAIL_PASSWORD')
 	# print MAIL_PASSWORD
+
+class DevelopmentConfig(Config): # 开发专用配置
+	DEBUG = True
 
 	# [sqlite](http://docs.sqlalchemy.org/en/rel_1_0/core/engines.html#sqlite)
 	SQLALCHEMY_DATABASE_URI = 'sqlite:///' + os.path.join(basedir, 'app.db') # 数据库文件的路径、文件名
@@ -42,6 +42,9 @@ class DevelopmentConfig(Config): # 开发专用配置
 
 class TestingConfig(Config): # 测试专用配置
 	TESTING = True
+
+	# CSPR_ENABLED = False
+	WTF_CSRF_ENABLED = False
 
 	SQLALCHEMY_DATABASE_URI = 'sqlite:///' + os.path.join(basedir, 'app_test.db') # 数据库文件的路径、文件名
 

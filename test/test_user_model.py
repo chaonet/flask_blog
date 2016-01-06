@@ -1,8 +1,19 @@
 # -*- coding:utf-8 -*-
 import unittest
+from app import create_app, db
 from app.models import User, Role, Permission, AnonymousUser
 
 class UserModelTestCase(unittest.TestCase):
+	def setUp(self):
+		self.app = create_app('testing')
+		self.app_context = self.app.app_context()
+		self.app_context.push()
+		db.create_all()
+
+	def tearDown(self):
+		db.session.remove()
+		db.drop_all()
+		self.app_context.pop()
 
 	def test_password_setter(self): # 验证设置密码可以自动生成 hash
 		u = User(password = 'cat')
@@ -23,11 +34,11 @@ class UserModelTestCase(unittest.TestCase):
 		u2 = User(password = 'cat')
 		self.assertTrue(u.password_hash != u2.password_hash)
 
-	# def test_roles_and_permissions(self):
-	# 	Role.insert_roles()
-	# 	u = User(email='john@example.com', password='cat')
-	# 	self.assertTrue(u.can(Permission.WRITE_ARTICLES))
-	# 	self.assertFalse(u.can(Permission.MODERATE_COMMENTS))
+	def test_roles_and_permissions(self):
+		Role.insert_roles()
+		u = User(email='john@example.com', password='cat')
+		self.assertTrue(u.can(Permission.WRITE_ARTICLES))
+		self.assertFalse(u.can(Permission.MODERATE_COMMENTS))
 
 	def test_anonymous_user(self):
 		u = AnonymousUser()

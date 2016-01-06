@@ -48,7 +48,7 @@ def auth_error():
 @auth.login_required # 保护路由，只允许已登陆用户访问。否则，将用户重定向到 登陆页面
 def before_request():
 	if not g.current_user.is_anonymous and not g.current_user.confirmed: # 注册、登陆，但还没确认 的用户
-		return forbidden('Unconfirmed account1') # 拒绝
+		return forbidden('Unconfirmed account') # 拒绝
 
 # 将生成的 认证令牌 发送给客户端
 @api.route('/token')

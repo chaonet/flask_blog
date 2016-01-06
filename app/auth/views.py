@@ -71,7 +71,7 @@ def register():
         # 即便通过配置,程序已经可以在请求末尾自动提交数据库变化,这里也要添加 db.session.commit() 调用。
         # 因为，提交数据库之后才能赋予新用户 id 值,而确认令 牌需要用到 id,所以不能延后提交。
         token = user.generate_confirmation_token()
-        send_email(user.email, 'Confirm Your Account', 'confirm', user=user, token=token)
+        send_email(user.email, 'Confirm Your Account', 'auth/email/confirm', user=user, token=token)
         flash('A confirmation email has been sent to you by email.')
         return redirect(url_for('auth.login')) # 重定向到登陆页面, 让用户登陆。向 login url 发送 get 请求。
     return render_template('auth/register.html', form=form)
@@ -94,8 +94,9 @@ def confirm(token):
 def before_request():
     if current_user.is_authenticated:
         current_user.ping()
-        if not current_user.confirmed and  \
-        request.endpoint[0:7] != 'confirm' and request.endpoint[0:6] != 'logout' and request.endpoint[0:6] != 'index':
+        # print request.endpoint
+        if not current_user.confirmed and \
+        request.endpoint[0:12] != 'auth.confirm' and request.endpoint[0:11] != 'auth.logout' and request.endpoint[0:10] != 'main.index':
     #对于已经登录、没有确认、请求的页面不是令牌页面的 请求
         # return redirect(url_for('unconfirmed'))
         # print request.endpoint[0:6] is 'logout'
@@ -144,7 +145,7 @@ def renew_email():
         new_email = form.new_email.data
         session['new_email'] = new_email
         token = current_user.generate_confirmation_token(new_email=new_email)
-        send_email(new_email, 'Confirm Your new email', 'auth/email/confirmmail', user=current_user, token=token)
+        send_email(new_email, 'Confirm Your new email', 'auth/confirmmail', user=current_user, token=token)
         flash('A confirmation email has been sent to you by email.')
         return redirect(url_for('main.index'))
     return render_template('auth/renew.html', form=form, head=head)
@@ -192,19 +193,4 @@ def confirmpassword(token):
             return redirect(url_for('main.index'))
         return render_template('auth/renew.html', form=form, head=head) # 渲染`renew`给用户，表单提交时，url 保持为当前页面
     return render_template('main.index.html')
-
-
-# 请求钩子, 在请求被交给指定的视图处理前，进行处理
-@auth.before_app_request
-def before_request():
-    if current_user.is_authenticated:
-        current_user.ping()
-        if not current_user.confirmed and  \
-        request.endpoint[0:7] != 'confirm' and request.endpoint[0:6] != 'logout' and request.endpoint[0:6] != 'index':
-    #对于已经登录、没有确认、请求的页面不是令牌页面的 请求
-        # return redirect(url_for('unconfirmed'))
-        # print request.endpoint[0:6] is 'logout'
-            return render_template('auth/unconfirmed.html')
-        # 重定向到 未确认页面
-
 

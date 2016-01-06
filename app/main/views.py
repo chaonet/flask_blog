@@ -336,5 +336,16 @@ def delete_comment(id):
         flash("You can not delete this comment.")
     return redirect(url_for('.post', id=comment.post.id))
 
-
-
+# 请求钩子, 在请求被交给指定的视图处理前，进行处理
+@main.before_app_request
+def before_request():
+    if current_user.is_authenticated:
+        current_user.ping()
+        # print request.endpoint
+        if not current_user.confirmed and \
+        request.endpoint[0:12] != 'auth.confirm' and request.endpoint[0:11] != 'auth.logout' and request.endpoint[0:10] != 'main.index':
+    #对于已经登录、没有确认、请求的页面不是令牌页面的 请求
+        # return redirect(url_for('unconfirmed'))
+        # print request.endpoint[0:6] is 'logout'
+            return render_template('auth/unconfirmed.html')
+        # 重定向到 未确认页面
