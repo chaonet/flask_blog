@@ -349,3 +349,18 @@ def before_request():
         # print request.endpoint[0:6] is 'logout'
             return render_template('auth/unconfirmed.html')
         # 重定向到 未确认页面
+
+# 关闭服务器的路由，测试用
+@main.route('/shutdown')
+def server():
+    if not current_app.testing: # 如果程序没有运行在测试环境，该路由不可用。？？
+        abort(404)
+    shutdown = request.environ.get('werkzeug.server.shutdown') # 调用 werkzeug 提供的关闭函数关闭服务器
+    if not shutdown:
+        abort(500)
+    shutdown()
+    return 'Shutting down...'
+
+
+
+
