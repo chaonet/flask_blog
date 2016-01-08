@@ -81,5 +81,20 @@ Ran 2 tests in 0.050s
 OK
 '''
 
+# 代码分析器
+@manager.command
+def profile(length=25, profile_dir=None):
+    """Start the application under the code profiler."""
+    from werkzeug.contrib.profiler import ProfilerMiddleware
+    app.wsgi_app = ProfilerMiddleware(app.wsgi_app, restrictions=[length], profile_dir=profile_dir)
+    # 需要分析的 WSGI 应用，
+    app.run()
+
+"""
+使用 python manage.py profile 启动程序后,终端会显示每条请求的分析数据,其中包含运行最慢的 25 个函数。
+--length 选项可以修改报告中显示的函数数量。
+如果指定了 --profile-dir 选项,每条请求的分析数据就会保存到指定目录下的一个文件中。
+"""
+
 if __name__ == '__main__':
     manager.run()
