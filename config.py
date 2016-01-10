@@ -33,7 +33,7 @@ class Config: # 通用的基类
     FLASKY_DB_QUERY_TIMEOUT = 0.0001 # 查询耗时的阈值，0.5s
 
     @staticmethod
-    def __init__(app):
+    def init_app(app):
         pass
 
     SSL_DISABLE = True # 默认关闭 SSL
@@ -68,14 +68,14 @@ class ProductionConfig(Config):
         from logging.handlers import SMTPHandler
         credentials = None
         secure = None
-        if getattr(cls.MAIL_USERNAME, None) is not None:
+        if getattr(cls, 'MAIL_USERNAME', None) is not None:
             credentials = (cls.MAIL_USERNAME, cls.MAIL_PASSWORD)
             if getattr(cls, 'MAIL_USE_TLS', None):
                 secure = ()
         mail_handler = SMTPHandler(
             mailhost=(cls.MAIL_SERVER, cls.MAIL_PORT),
             fromaddr=cls.MAIL_USERNAME,
-            toaddr=[cls.MAIL_USERNAME],
+            toaddrs=[cls.MAIL_USERNAME],
             subject='Application Error',
             credentials=credentials,
             secure=secure
