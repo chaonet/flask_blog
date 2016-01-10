@@ -363,17 +363,20 @@ def server():
     shutdown()
     return 'Shutting down...'
 
+"""
+记录操作时间大于阈值的数据库操作
+"""
 # 在视图函数处理完请求后，接受响应对象，进行必要处理，并输出响应对象
-@main.after_app_request
-def after_request(response):
-    for query in get_debug_queries(): # 请求中执行的查询的列表
-        # print query
-        if query.duration >= current_app.config['FLASKY_DB_QUERY_TIMEOUT']:
-            current_app.logger.warning(
-                'Slow query: %s\nParameters: %s\nDuration: %s\nContext: %s\n' %
-                (query.statement, query.parameters, query.duration, query.context))
-            # print 'Slow query: %s\nParameters: %s\nDuration: %s\nContext: %s\n' % (query.statement, query.parameters, query.duration, query.context)
-    return response
+# @main.after_app_request
+# def after_request(response):
+#     for query in get_debug_queries(): # 请求中执行的查询的列表
+#         # print query
+#         if query.duration >= current_app.config['FLASKY_DB_QUERY_TIMEOUT']:
+#             current_app.logger.warning(
+#                 'Slow query: %s\nParameters: %s\nDuration: %s\nContext: %s\n' %
+#                 (query.statement, query.parameters, query.duration, query.context))
+#             # print 'Slow query: %s\nParameters: %s\nDuration: %s\nContext: %s\n' % (query.statement, query.parameters, query.duration, query.context)
+#     return response
 """
 <query statement="SELECT users.id AS users_id, users.username AS users_username, users.email AS users_email, users.password_hash AS users_password_hash, users.confirmed AS users_confirmed, users.name AS users_name, users.location AS users_location, users.about_me AS users_about_me, users.member_since AS users_member_since, users.last_seen AS users_last_seen, users.avatar_hash AS users_avatar_hash, users.role_id AS users_role_id
 FROM users

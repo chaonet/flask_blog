@@ -7,7 +7,7 @@ from app.models import User, Role
 from flask.ext.script import Manager, Shell
 from flask.ext.migrate import Migrate, MigrateCommand
 
-app = create_app('default') # 创建程序
+app = create_app(os.getenv('FLASK_CONFIG') or 'default') # 创建程序，配置从环境变量获取，或使用默认值
 manager = Manager(app)  # 初始化 Flask-Script
 migrate = Migrate(app, db) # 初始化 Flask-Migrate
 
@@ -95,6 +95,20 @@ def profile(length=25, profile_dir=None):
 --length 选项可以修改报告中显示的函数数量。
 如果指定了 --profile-dir 选项,每条请求的分析数据就会保存到指定目录下的一个文件中。
 """
+
+# 部署的命令
+@manager.command
+def deploy():
+    """Run deployment tasks."""
+    from flask.ext.migrate import upgrade
+    from app.models import Role
+
+    # 把数据库迁移到最新修订版本
+    upgrade()
+
+    # 创建用户角色
+    Role.insert_roles()
+
 
 if __name__ == '__main__':
     manager.run()

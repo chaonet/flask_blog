@@ -47,6 +47,11 @@ def create_app(config_name):
 	from .api_1_0 import api as api_1_0_blueprint
 	app.register_blueprint(api_1_0_blueprint, url_prefix='/api/v1.0')
 
+	# 如果不是开发、测试环境，并且 SSL 没有被关闭
+	if not app.debug and not app.testing and not app.config['SSL_DISABLE']:
+		from flask.ext.sslify import SSLify
+		sslify = SSLify(app) # 让程序将拦截发往 http:// 的请求，重定向到 https://
+
 	return app
 
 # from app import views, models
