@@ -15,6 +15,7 @@ class Config: # 通用的基类
     SECRET_KEY = 'this-is-safe-and-you-never-guess-it' # 建立一个加密的令牌，验证表单
 
     SQLALCHEMY_COMMIT_ON_TEARDOWN = True  # 每次请求结束后, 自动提交数据库中的变动
+    SQLALCHEMY_TRACK_MODIFICATIONS = True # 开启修改的跟踪, 覆盖默认的 None 配置
 
     FLASKY_POSTS_PER_PAGE=10
     FLASKY_FOLLOWERS_PER_PAGE=1
@@ -101,8 +102,6 @@ class HerokuConfig(ProductionConfig): # 继承自 ProductionConfig
         from werkzeug.contrib.fixers import ProxyFix
         app.wsgi_app = ProxyFix(app.wsgi_app) # 包装 app.wsgi_app ，进行中间件添加
         # 收到请求时,中间件有机会审查环境,在处理请求之前做些修改。
-
-        SQLALCHEMY_TRACK_MODIFICATIONS = True # 开启修改的跟踪, 覆盖默认的 None 配置
 
 config = {
     'development': DevelopmentConfig,
