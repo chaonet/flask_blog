@@ -18,6 +18,7 @@ bootstrap = Bootstrap()
 mail = Mail()
 moment = Moment()
 db = SQLAlchemy()
+db.SQLALCHEMY_TRACK_MODIFICATIONS = True
 pagedown = PageDown()
 
 login_manager = LoginManager()
