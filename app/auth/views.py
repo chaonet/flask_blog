@@ -114,7 +114,7 @@ def confirmresend():
     # print current_user.email
     # xuchaorfc@gmail.com
     # print current_user
-    send_email(current_user.email, 'Confirm Your Account', 'confirm', user=current_user, token=token)
+    send_email(current_user.email, 'Confirm Your Account', 'auth/email/confirm', user=current_user, token=token)
     flash('A confirmation email has been sent to you by email.')
     return redirect(url_for('main.index'))
 
