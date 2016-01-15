@@ -64,6 +64,7 @@ def edit_profile():
         current_user.location = form.location.data
         current_user.about_me = form.about_me.data
         db.session.add(current_user)
+        db.session.commit()
         flash('Your profile has been updated')
         return redirect(url_for('.user', username=current_user.username)) # 提交后，转到个人主页，显示编辑结果
     # 如果是 GET，或 验证器不通过，显示目前的资料内容
@@ -89,6 +90,7 @@ def edit_profile_admin(id):
         user.location = form.location.data
         user.about_me = form.about_me.data
         db.session.add(current_user)
+        db.session.commit()
         flash('Your profile has been updated')
         return redirect(url_for('.user', username=user.username)) # 提交后，转到个人主页，显示编辑结果
     # 如果是 GET，或 验证器不通过，显示目前的资料内容
@@ -113,6 +115,7 @@ def index():
         # 数据库需要真正的用户对象,因此要调用 _get_current_object() 方法获取。
         post = Post(body=form.body.data, author=current_user._get_current_object()) # 为提交的文章 新建一个 Post 对象，
         db.session.add(post)
+        db.session.commit()
         return redirect(url_for('.index'))
     # 渲染的页数从请求的查询字符串(request.args)中获取,如果没有明确指定,则默认渲染第一页。
     # 参数 type=int 保证参数无法转换成整数时,返回默认值。
@@ -179,6 +182,7 @@ def post(id):
     if current_user.can(Permission.COMMENT) and form.validate_on_submit():
         comment = Comment(body=form.body.data, author=current_user._get_current_object(),  post=post) # 通过 relationship 创建的属性，在关系两边进行添加
         db.session.add(comment)
+        db.session.commit()
         flash('Your comment has been published.')
         return redirect(url_for('.post', id=post.id, page=-1)) # -1，因为最新添加的在post.comments列表的最后，如果想要显示最新的消息，默认显示最后一页
     page = request.args.get('page', 1, type=int)
@@ -207,6 +211,7 @@ def edit_post(id):
     if form.validate_on_submit():
         post.body = form.body.data
         db.session.add(post)
+        db.session.commit()
         flash('The post has been updated.')
         return redirect(url_for('.post', id=post.id)) # 进入文章页面, 携带参数 id
     form.body.data = post.body
@@ -313,6 +318,7 @@ def moderate_enable(id):
     comment = Comment.query.get_or_404(id)
     comment.disabled = False
     db.session.add(comment)
+    db.session.commit()
     return redirect(url_for('.moderate', page = request.args.get('page', 1, type=int)))
 
 @main.route('/moderate/disable/<int:id>')
@@ -322,6 +328,7 @@ def moderate_disable(id):
     comment = Comment.query.get_or_404(id)
     comment.disabled = True
     db.session.add(comment)
+    db.session.commit()
     print Comment.query.get_or_404(id).disabled
     return redirect(url_for('.moderate', page = request.args.get('page', 1, type=int)))
 
