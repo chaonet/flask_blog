@@ -184,7 +184,7 @@ def post(id):
         db.session.add(comment)
         db.session.commit()
         flash('Your comment has been published.')
-        return redirect(url_for('.post', id=post.id, page=-1)) # -1，因为最新添加的在post.comments列表的最后，如果想要显示最新的消息，默认显示最后一页
+        return redirect(url_for('.post', id=post.id, page=1))
     page = request.args.get('page', 1, type=int)
     # if page == -1:
     #     page = post.comments.count() / current_app.config['FLASKY_COMMENTS_PER_PAGE'] + 1 # 直接显示有最新评论的那一页
@@ -329,7 +329,7 @@ def moderate_disable(id):
     comment.disabled = True
     db.session.add(comment)
     db.session.commit()
-    print Comment.query.get_or_404(id).disabled
+    # print Comment.query.get_or_404(id).disabled
     return redirect(url_for('.moderate', page = request.args.get('page', 1, type=int)))
 
 @main.route('/delete_comment/<int:id>')
