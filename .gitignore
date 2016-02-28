@@ -57,3 +57,13 @@ docs/_build/
 # PyBuilder
 target/
 .env
+
+db_*
+app_*
+app.db
+tmp/*
+requirements/*
+
+# virtualenvs
+venv-*/
+
