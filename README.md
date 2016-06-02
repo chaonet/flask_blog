@@ -33,8 +33,9 @@ cd flask_blog
 virtualenv venv-foo
 . ./venv-foo/bin/activate
 pip install -r requirements.txt
-××Ubuntu/Debia××
-××pip install前先使用sudo apt-get install libpq-dev python-dev××
+
+Ubuntu/Debia
+pip install前先使用sudo apt-get install libpq-dev python-dev
 ```
 ## 使用：
 ```
